@@ -291,4 +291,14 @@ button {
 /* Add a slight delay for the second pulse element */
 .animate-pulse.delay-150 {
   animation-delay: 0.75s;
+}
+
+/* Add slide-in animation for the chat panel */
+@keyframes slide-in {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
 } 
