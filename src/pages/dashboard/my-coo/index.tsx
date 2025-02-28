@@ -16,9 +16,21 @@ import {
   CubeTransparentIcon,
   BoltIcon,
   ArrowPathRoundedSquareIcon,
-  SparklesIcon
+  SparklesIcon,
+  FolderIcon,
+  CloudIcon,
+  DocumentIcon,
+  TableCellsIcon,
+  PhotoIcon,
+  ChatBubbleLeftRightIcon,
+  MagnifyingGlassIcon,
+  ArrowUpTrayIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { IntegrationWorkflow, NodeType, IntegrationNode } from '../../../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DndProvider, useDrag, useDrop, DragSourceMonitor, DropTargetMonitor } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Template type with proper node structure
 type IntegrationTemplate = {
@@ -46,130 +58,113 @@ type IntegrationTemplate = {
 // Example templates with proper node structure
 const INTEGRATION_TEMPLATES: IntegrationTemplate[] = [
   {
-    id: 'data-sync',
-    name: 'Data Sync Pipeline',
-    description: 'Synchronize data between two systems in real-time with automatic conflict resolution.',
-    icon: <ArrowPathRoundedSquareIcon className="w-6 h-6" />,
-    category: 'Data Integration',
-    complexity: 'Medium',
-    estimatedTime: '10 min',
-    nodes: [
-      {
-        id: 'source',
-        serviceId: 'database',
-        position: { x: 100, y: 100 },
-        data: {
-          label: 'Source DB',
-          type: 'source',
-          icon: 'database',
-          connected: false,
-          config: {}
-        }
-      },
-      {
-        id: 'transform',
-        serviceId: 'transform',
-        position: { x: 300, y: 100 },
-        data: {
-          label: 'Transform',
-          type: 'transform',
-          icon: 'code',
-          connected: false,
-          config: {}
-        }
-      },
-      {
-        id: 'destination',
-        serviceId: 'database',
-        position: { x: 500, y: 100 },
-        data: {
-          label: 'Destination DB',
-          type: 'destination',
-          icon: 'database',
-          connected: false,
-          config: {}
-        }
-      }
-    ]
-  },
-  {
-    id: 'event-stream',
-    name: 'Event Streaming',
-    description: 'Process real-time events with a scalable streaming pipeline for analytics and monitoring.',
-    icon: <BoltIcon className="w-6 h-6" />,
-    category: 'Event Processing',
-    complexity: 'Advanced',
-    estimatedTime: '15 min',
-    nodes: [
-      {
-        id: 'events',
-        serviceId: 'events',
-        position: { x: 100, y: 100 },
-        data: {
-          label: 'Event Source',
-          type: 'source',
-          icon: 'lightning',
-          connected: false,
-          config: {}
-        }
-      },
-      {
-        id: 'process',
-        serviceId: 'process',
-        position: { x: 300, y: 100 },
-        data: {
-          label: 'Process',
-          type: 'transform',
-          icon: 'processor',
-          connected: false,
-          config: {}
-        }
-      },
-      {
-        id: 'analyze',
-        serviceId: 'analyze',
-        position: { x: 500, y: 100 },
-        data: {
-          label: 'Analyze',
-          type: 'destination',
-          icon: 'chart',
-          connected: false,
-          config: {}
-        }
-      }
-    ]
-  },
-  {
-    id: 'api-integration',
-    name: 'API Integration',
-    description: 'Connect and orchestrate multiple APIs with automatic retries and error handling.',
-    icon: <CubeTransparentIcon className="w-6 h-6" />,
-    category: 'API Management',
+    id: 'google-drive',
+    name: 'Google Drive',
+    description: 'Connect and sync your Google Drive files. Automatically backup and organize documents in real-time.',
+    icon: <FolderIcon className="w-6 h-6" />,
+    category: 'Cloud Storage',
     complexity: 'Simple',
     estimatedTime: '5 min',
     nodes: [
       {
-        id: 'api1',
-        serviceId: 'api',
+        id: 'drive-source',
+        serviceId: 'google-drive',
         position: { x: 100, y: 100 },
         data: {
-          label: 'API 1',
+          label: 'Google Drive',
           type: 'source',
-          icon: 'api',
+          icon: 'drive',
           connected: false,
-          config: {}
+          config: {
+            scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+            watchInterval: 300 // 5 minutes
+          }
         }
       },
       {
-        id: 'api2',
-        serviceId: 'api',
+        id: 'file-processor',
+        serviceId: 'processor',
         position: { x: 300, y: 100 },
         data: {
-          label: 'API 2',
-          type: 'destination',
-          icon: 'api',
+          label: 'File Processor',
+          type: 'transform',
+          icon: 'file',
           connected: false,
-          config: {}
+          config: {
+            fileTypes: ['document', 'spreadsheet', 'pdf'],
+            maxSize: 100 * 1024 * 1024 // 100MB
+          }
+        }
+      },
+      {
+        id: 'storage',
+        serviceId: 'storage',
+        position: { x: 500, y: 100 },
+        data: {
+          label: 'Storage',
+          type: 'destination',
+          icon: 'database',
+          connected: false,
+          config: {
+            compression: true,
+            versioning: true
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'dropbox',
+    name: 'Dropbox',
+    description: 'Integrate with Dropbox to automatically sync and manage files across your organization.',
+    icon: <CloudIcon className="w-6 h-6" />,
+    category: 'Cloud Storage',
+    complexity: 'Simple',
+    estimatedTime: '5 min',
+    nodes: [
+      {
+        id: 'dropbox-source',
+        serviceId: 'dropbox',
+        position: { x: 100, y: 100 },
+        data: {
+          label: 'Dropbox',
+          type: 'source',
+          icon: 'dropbox',
+          connected: false,
+          config: {
+            path: '/',
+            watchChanges: true
+          }
+        }
+      },
+      {
+        id: 'file-processor',
+        serviceId: 'processor',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'File Processor',
+          type: 'transform',
+          icon: 'file',
+          connected: false,
+          config: {
+            fileTypes: ['document', 'spreadsheet', 'pdf'],
+            maxSize: 100 * 1024 * 1024 // 100MB
+          }
+        }
+      },
+      {
+        id: 'storage',
+        serviceId: 'storage',
+        position: { x: 500, y: 100 },
+        data: {
+          label: 'Storage',
+          type: 'destination',
+          icon: 'database',
+          connected: false,
+          config: {
+            compression: true,
+            versioning: true
+          }
         }
       }
     ]
@@ -222,46 +217,34 @@ const INTEGRATION_TEMPLATES: IntegrationTemplate[] = [
     ]
   },
   {
-    id: 'ml-pipeline',
-    name: 'ML Model Pipeline',
-    description: 'Deploy and monitor machine learning models with automated retraining.',
-    icon: <SparklesIcon className="w-6 h-6" />,
-    category: 'Machine Learning',
-    complexity: 'Advanced',
-    estimatedTime: '25 min',
+    id: 'api-integration',
+    name: 'API Integration',
+    description: 'Connect and orchestrate multiple APIs with automatic retries and error handling.',
+    icon: <CubeTransparentIcon className="w-6 h-6" />,
+    category: 'API Management',
+    complexity: 'Simple',
+    estimatedTime: '5 min',
     nodes: [
       {
-        id: 'data',
-        serviceId: 'data',
+        id: 'api1',
+        serviceId: 'api',
         position: { x: 100, y: 100 },
         data: {
-          label: 'Data',
+          label: 'API 1',
           type: 'source',
-          icon: 'database',
+          icon: 'api',
           connected: false,
           config: {}
         }
       },
       {
-        id: 'train',
-        serviceId: 'train',
+        id: 'api2',
+        serviceId: 'api',
         position: { x: 300, y: 100 },
         data: {
-          label: 'Train',
-          type: 'transform',
-          icon: 'brain',
-          connected: false,
-          config: {}
-        }
-      },
-      {
-        id: 'deploy',
-        serviceId: 'deploy',
-        position: { x: 500, y: 100 },
-        data: {
-          label: 'Deploy',
+          label: 'API 2',
           type: 'destination',
-          icon: 'cloud',
+          icon: 'api',
           connected: false,
           config: {}
         }
@@ -313,35 +296,381 @@ const createWorkflowFromTemplate = (template: IntegrationTemplate): IntegrationW
   return workflow;
 };
 
+// Update the mock workflows to have the correct type structure
+const mockWorkflows: IntegrationWorkflow[] = [
+  {
+    id: 'mock-1',
+    name: 'Customer Data Sync',
+    description: 'Synchronize customer data between CRM and data warehouse',
+    status: 'active' as const,
+    createdAt: '2024-03-15T10:00:00Z',
+    updatedAt: '2024-03-15T10:00:00Z',
+    nodes: [
+      {
+        id: 'source-1',
+        serviceId: 'crm',
+        position: { x: 100, y: 100 },
+        data: {
+          label: 'CRM',
+          type: 'source' as const,
+          icon: 'database',
+          connected: true,
+          config: {}
+        }
+      },
+      {
+        id: 'destination-1',
+        serviceId: 'warehouse',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'Warehouse',
+          type: 'destination' as const,
+          icon: 'database',
+          connected: true,
+          config: {}
+        }
+      }
+    ],
+    edges: []
+  },
+  {
+    id: 'mock-2',
+    name: 'Sales Analytics Pipeline',
+    description: 'Process and analyze sales data in real-time',
+    status: 'paused' as const,
+    createdAt: '2024-03-14T15:30:00Z',
+    updatedAt: '2024-03-15T09:00:00Z',
+    nodes: [
+      {
+        id: 'source-2',
+        serviceId: 'sales',
+        position: { x: 100, y: 100 },
+        data: {
+          label: 'Sales Data',
+          type: 'source' as const,
+          icon: 'chart',
+          connected: true,
+          config: {}
+        }
+      },
+      {
+        id: 'transform-2',
+        serviceId: 'transform',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'Transform',
+          type: 'transform' as const,
+          icon: 'code',
+          connected: true,
+          config: {}
+        }
+      },
+      {
+        id: 'destination-2',
+        serviceId: 'analytics',
+        position: { x: 500, y: 100 },
+        data: {
+          label: 'Analytics',
+          type: 'destination' as const,
+          icon: 'chart',
+          connected: true,
+          config: {}
+        }
+      }
+    ],
+    edges: []
+  }
+];
+
+interface DraggableTemplateCardProps {
+  template: IntegrationTemplate;
+  onSelect: () => void;
+}
+
+interface DragItem {
+  template: IntegrationTemplate;
+}
+
+// Add new component for draggable template card
+const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template, onSelect }) => {
+  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
+    type: 'template',
+    item: { template },
+    collect: (monitor: DragSourceMonitor) => ({
+      isDragging: monitor.isDragging()
+    })
+  }));
+
+  return (
+    <motion.div
+      ref={drag}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`group cursor-pointer bg-white border border-cco-neutral-200 rounded-xl p-6 hover:shadow-md transition-all ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+      style={{
+        boxShadow: isDragging ? '0 20px 25px -5px rgb(0 0 0 / 0.1)' : undefined
+      }}
+      onClick={onSelect}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <motion.div 
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-primary-100 text-cco-primary-600"
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.5 }}
+          >
+            {template.icon}
+          </motion.div>
+          <div>
+            <h3 className="text-lg font-semibold text-cco-neutral-900 group-hover:text-cco-primary-600 transition-colors">
+              {template.name}
+            </h3>
+            <span className="text-xs font-medium text-cco-neutral-500">
+              {template.category}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <p className="text-sm text-cco-neutral-600 mb-4">
+        {template.description}
+      </p>
+      
+      <div className="flex items-center justify-between text-xs">
+        <span className="px-2 py-1 rounded-full bg-cco-neutral-100 text-cco-neutral-700">
+          {template.complexity}
+        </span>
+        <span className="text-cco-neutral-500">
+          ⏱️ {template.estimatedTime}
+        </span>
+      </div>
+
+      {/* Node Preview */}
+      <div className="mt-4 pt-4 border-t border-cco-neutral-100">
+        <div className="flex items-center space-x-2">
+          {template.nodes.map((node, index) => (
+            <React.Fragment key={node.id}>
+              <motion.div 
+                className="px-2 py-1 rounded bg-cco-neutral-50 text-xs text-cco-neutral-700"
+                whileHover={{ scale: 1.1 }}
+              >
+                {node.data.label}
+              </motion.div>
+              {index < template.nodes.length - 1 && (
+                <motion.div 
+                  className="w-4 h-4 text-cco-neutral-400"
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  <ChevronRightIcon />
+                </motion.div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Add mock synced files data
+const MOCK_SYNCED_FILES = {
+  'google-drive': [
+    {
+      id: 'doc1',
+      name: 'Q1 2024 Strategy Planning.docx',
+      type: 'document',
+      lastModified: '2024-03-18T14:30:00Z',
+      size: '2.4 MB',
+      icon: <DocumentIcon className="w-5 h-5" />,
+      status: 'synced'
+    },
+    {
+      id: 'sheet1',
+      name: 'Sales Pipeline Analysis.xlsx',
+      type: 'spreadsheet',
+      lastModified: '2024-03-17T09:15:00Z',
+      size: '1.8 MB',
+      icon: <TableCellsIcon className="w-5 h-5" />,
+      status: 'synced'
+    },
+    {
+      id: 'pres1',
+      name: 'Investor Pitch Deck.pptx',
+      type: 'presentation',
+      lastModified: '2024-03-16T16:45:00Z',
+      size: '5.2 MB',
+      icon: <DocumentIcon className="w-5 h-5" />,
+      status: 'syncing'
+    },
+    {
+      id: 'img1',
+      name: 'Product Screenshots',
+      type: 'folder',
+      lastModified: '2024-03-15T11:20:00Z',
+      size: '45 MB',
+      icon: <FolderIcon className="w-5 h-5" />,
+      status: 'synced'
+    }
+  ],
+  'dropbox': [
+    {
+      id: 'proj1',
+      name: 'Project Assets',
+      type: 'folder',
+      lastModified: '2024-03-18T13:00:00Z',
+      size: '156 MB',
+      icon: <FolderIcon className="w-5 h-5" />,
+      status: 'synced'
+    },
+    {
+      id: 'doc2',
+      name: 'Technical Documentation.pdf',
+      type: 'document',
+      lastModified: '2024-03-17T15:30:00Z',
+      size: '3.1 MB',
+      icon: <DocumentIcon className="w-5 h-5" />,
+      status: 'synced'
+    },
+    {
+      id: 'img2',
+      name: 'Brand Guidelines.ai',
+      type: 'image',
+      lastModified: '2024-03-16T10:45:00Z',
+      size: '8.7 MB',
+      icon: <PhotoIcon className="w-5 h-5" />,
+      status: 'syncing'
+    },
+    {
+      id: 'sheet2',
+      name: 'Resource Allocation.xlsx',
+      type: 'spreadsheet',
+      lastModified: '2024-03-15T14:20:00Z',
+      size: '1.2 MB',
+      icon: <TableCellsIcon className="w-5 h-5" />,
+      status: 'synced'
+    }
+  ]
+};
+
+// Add the FileSync component
+const FileSyncView: React.FC<{ provider: 'google-drive' | 'dropbox' }> = ({ provider }) => {
+  const files = MOCK_SYNCED_FILES[provider];
+  const providerName = provider === 'google-drive' ? 'Google Drive' : 'Dropbox';
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+
+  return (
+    <div className="h-full">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search files..."
+              className="pl-10 pr-4 py-2 border border-cco-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cco-primary-500 w-64"
+            />
+            <MagnifyingGlassIcon className="w-5 h-5 text-cco-neutral-400 absolute left-3 top-2.5" />
+          </div>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-cco-primary-500 text-white rounded-lg hover:bg-cco-primary-600 transition-colors">
+            <ArrowUpTrayIcon className="w-5 h-5" />
+            <span>Upload</span>
+          </button>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-cco-neutral-600">Last synced 2 minutes ago</span>
+          <button className="p-2 hover:bg-cco-neutral-100 rounded-full transition-colors">
+            <ArrowPathIcon className="w-5 h-5 text-cco-neutral-600" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-5 gap-6">
+        <div className="col-span-3 bg-white rounded-xl border border-cco-neutral-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-cco-neutral-200 bg-cco-neutral-50">
+            <h3 className="font-medium text-cco-neutral-900">Synced Files from {providerName}</h3>
+          </div>
+          <div className="divide-y divide-cco-neutral-100">
+            {files.map((file) => (
+              <div
+                key={file.id}
+                onClick={() => setSelectedFile(file.id)}
+                className={`flex items-center justify-between px-4 py-3 hover:bg-cco-neutral-50 cursor-pointer ${
+                  selectedFile === file.id ? 'bg-cco-neutral-50' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="text-cco-neutral-600">{file.icon}</div>
+                  <div>
+                    <p className="text-sm font-medium text-cco-neutral-900">{file.name}</p>
+                    <p className="text-xs text-cco-neutral-500">
+                      {file.size} • Modified {new Date(file.lastModified).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {file.status === 'syncing' ? (
+                    <span className="flex items-center space-x-1 text-xs text-cco-primary-600">
+                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      <span>Syncing</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center space-x-1 text-xs text-cco-neutral-600">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                      <span>Synced</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-2 bg-white rounded-xl border border-cco-neutral-200">
+          <div className="px-4 py-3 border-b border-cco-neutral-200 bg-cco-neutral-50 flex items-center justify-between">
+            <h3 className="font-medium text-cco-neutral-900">File Assistant</h3>
+            <ChatBubbleLeftRightIcon className="w-5 h-5 text-cco-neutral-600" />
+          </div>
+          <div className="p-4">
+            <div className="text-center py-8">
+              <div className="mx-auto w-12 h-12 rounded-full bg-cco-neutral-100 flex items-center justify-center mb-3">
+                <ChatBubbleLeftRightIcon className="w-6 h-6 text-cco-neutral-400" />
+              </div>
+              <h4 className="text-sm font-medium text-cco-neutral-900 mb-1">
+                Chat with your files
+              </h4>
+              <p className="text-xs text-cco-neutral-600 max-w-sm mx-auto">
+                Select a file to start a conversation. Ask questions, request summaries, or get insights about your documents.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function MyCOOPage() {
-  const [selectedWorkflow, setSelectedWorkflow] = useState<StrictIntegrationWorkflow | null>(null);
-  const [mode, setMode] = useState<'list' | 'edit' | 'create'>('list');
+  const [selectedWorkflow, setSelectedWorkflow] = useState<IntegrationWorkflow | null>(null);
+  const [mode, setMode] = useState<'list' | 'edit'>('list');
   const [showKeyboardTips, setShowKeyboardTips] = useState(false);
-  const [showTips, setShowTips] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<IntegrationTemplate | null>(null);
+  const [draggedTemplate, setDraggedTemplate] = useState(null);
   
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
       switch (e.key) {
-        case SHORTCUTS.CREATE_WORKFLOW:
-          handleCreateNew();
-          break;
-        case SHORTCUTS.TOGGLE_TIPS:
-          setShowTips(prev => !prev);
-          break;
-        case SHORTCUTS.FOCUS_SEARCH:
-          e.preventDefault();
-          document.getElementById('workflow-search')?.focus();
-          break;
         case 'Escape':
-          if (mode !== 'list') handleBackToList();
+          if (mode === 'edit') handleBackToList();
           break;
       }
     };
@@ -350,25 +679,12 @@ export default function MyCOOPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [mode]);
 
-  const handleCreateNew = () => {
-    setSelectedWorkflow(null);
-    setMode('create');
-  };
-  
-  const handleEditWorkflow = (workflow: IntegrationWorkflow) => {
-    setSelectedWorkflow(workflow);
-    setMode('edit');
-  };
-  
   const handleBackToList = () => {
+    setSelectedTemplate(null);
+    setSelectedWorkflow(null);
     setMode('list');
   };
 
-  const filteredWorkflows = integrationWorkflows.filter(workflow =>
-    workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workflow.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
   return (
     <>
       <Head>
@@ -380,311 +696,157 @@ export default function MyCOOPage() {
       </Head>
       
       <DashboardLayout>
-        <div className="space-y-6 relative">
-          {/* Keyboard Shortcuts Overlay */}
-          {showKeyboardTips && (
-            <div className="fixed bottom-6 right-6 bg-white/95 p-4 rounded-xl shadow-lg border border-cco-neutral-200 w-80 z-50">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-cco-neutral-900 flex items-center">
-                  <CommandLineIcon className="w-4 h-4 mr-2" />
-                  Keyboard Shortcuts
-                </h3>
-                <button 
-                  onClick={() => setShowKeyboardTips(false)}
-                  className="text-cco-neutral-500 hover:text-cco-neutral-700"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-cco-neutral-600">New Workflow</span>
-                  <kbd className="px-2 py-1 bg-cco-neutral-100 rounded text-xs">n</kbd>
+        <DndProvider backend={HTML5Backend}>
+          <motion.div 
+            className="space-y-6 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Keyboard Shortcuts Overlay */}
+            {showKeyboardTips && (
+              <div className="fixed bottom-6 right-6 bg-white/95 p-4 rounded-xl shadow-lg border border-cco-neutral-200 w-80 z-50">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-cco-neutral-900 flex items-center">
+                    <CommandLineIcon className="w-4 h-4 mr-2" />
+                    Keyboard Shortcuts
+                  </h3>
+                  <button 
+                    onClick={() => setShowKeyboardTips(false)}
+                    className="text-cco-neutral-500 hover:text-cco-neutral-700"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-cco-neutral-600">Toggle Tips</span>
-                  <kbd className="px-2 py-1 bg-cco-neutral-100 rounded text-xs">t</kbd>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-cco-neutral-600">Exit Editor</span>
+                    <kbd className="px-2 py-1 bg-cco-neutral-100 rounded text-xs">esc</kbd>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-cco-neutral-600">Search</span>
-                  <kbd className="px-2 py-1 bg-cco-neutral-100 rounded text-xs">/</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-cco-neutral-600">Exit Editor</span>
-                  <kbd className="px-2 py-1 bg-cco-neutral-100 rounded text-xs">esc</kbd>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Main Content */}
-          <div className="bg-white rounded-xl p-6 shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-bold text-cco-neutral-900">My COO</h1>
-                <p className="text-cco-neutral-700">
-                  Manage your data integration workflows and connect to external services.
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setShowKeyboardTips(prev => !prev)}
-                  className="p-2 text-cco-neutral-600 hover:text-cco-neutral-900 hover:bg-cco-neutral-100 rounded-md transition-colors"
-                  title="Show Keyboard Shortcuts"
-                >
-                  <CommandLineIcon className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={handleCreateNew}
-                  className="bg-cco-primary-600 text-white px-4 py-2 rounded-md hover:bg-cco-primary-700 transition-colors flex items-center"
-                >
-                  <PlusIcon className="w-5 h-5 mr-2" />
-                  Create Workflow
-                </button>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <input
-                id="workflow-search"
-                type="text"
-                placeholder="Search workflows..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-md border border-cco-neutral-200 focus:outline-none focus:ring-2 focus:ring-cco-primary-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Tips Section */}
-            {showTips && (
-              <div className="mb-6 bg-cco-primary-50 rounded-lg p-4 flex items-start space-x-3">
-                <LightBulbIcon className="w-5 h-5 text-cco-primary-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-cco-primary-900 mb-1">Pro Tips</h3>
-                  <p className="text-sm text-cco-primary-700">
-                    Press <kbd className="px-1.5 py-0.5 bg-white rounded text-xs">n</kbd> to create a new workflow, 
-                    <kbd className="px-1.5 py-0.5 bg-white rounded text-xs ml-1">/</kbd> to search, and 
-                    <kbd className="px-1.5 py-0.5 bg-white rounded text-xs ml-1">t</kbd> to toggle these tips.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setShowTips(false)}
-                  className="text-cco-primary-600 hover:text-cco-primary-800"
-                >
-                  ✕
-                </button>
               </div>
             )}
-          </div>
-          
-          {/* Workflows Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredWorkflows.map((workflow) => (
-              <div 
-                key={workflow.id} 
-                className="group bg-white rounded-xl shadow overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xl font-semibold text-cco-neutral-900 group-hover:text-cco-primary-600 transition-colors">
-                      {workflow.name}
-                    </h2>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      workflow.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : workflow.status === 'paused'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {workflow.status.charAt(0).toUpperCase() + workflow.status.slice(1)}
-                    </span>
+
+            {/* Main Content */}
+            <motion.div 
+              className="bg-white rounded-xl p-6 shadow"
+              initial={{ y: -20 }}
+              animate={{ y: 0 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-cco-neutral-900">
+                    {!selectedTemplate ? (
+                      "Add Files to Chief Cognitive Officer"
+                    ) : (
+                      selectedTemplate.name
+                    )}
+                  </h1>
+                  <div className="mt-2 space-y-2">
+                    {!selectedTemplate ? (
+                      <>
+                        <p className="text-cco-neutral-700">
+                          Connect your third-party data providers to enhance your CCO's cognitive capabilities.
+                        </p>
+                        <p className="text-sm text-cco-neutral-600">
+                          Your data will be securely processed and integrated into your second brain, providing valuable insights during meetings, 
+                          enriching project context, and helping you make more informed decisions. Choose from our pre-built templates or create a custom connection.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-cco-neutral-600">
+                        {selectedTemplate.description}
+                      </p>
+                    )}
                   </div>
-                  
-                  <p className="text-cco-neutral-700 mb-4">
-                    {workflow.description}
-                  </p>
-                  
-                  {/* Workflow Preview */}
-                  <div className="bg-cco-neutral-50 rounded-lg p-4 mb-4 relative overflow-hidden group-hover:bg-cco-neutral-100 transition-colors">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-cco-primary-100 flex items-center justify-center">
-                        <span className="text-xs font-medium text-cco-primary-700">
-                          {workflow.nodes[0]?.data.label?.charAt(0)}
-                        </span>
-                      </div>
-                      <ChevronRightIcon className="w-4 h-4 text-cco-neutral-400" />
-                      <div className="flex-1 h-0.5 bg-cco-neutral-200 relative">
-                        <div 
-                          className="absolute inset-y-0 left-0 bg-cco-primary-500"
-                          style={{ width: `${workflow.status === 'active' ? '100%' : '0%'}` }}
-                        />
-                      </div>
-                      <ChevronRightIcon className="w-4 h-4 text-cco-neutral-400" />
-                      <div className="w-8 h-8 rounded-full bg-cco-primary-100 flex items-center justify-center">
-                        <span className="text-xs font-medium text-cco-primary-700">
-                          {workflow.nodes[workflow.nodes.length - 1]?.data.label?.charAt(0)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-cco-neutral-700">
-                        <span className="font-medium">Source:</span> {workflow.nodes[0]?.data.label}
-                      </span>
-                      <span className="text-cco-neutral-700">
-                        <span className="font-medium">Destination:</span> {workflow.nodes[workflow.nodes.length - 1]?.data.label}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs text-cco-neutral-600">
-                    <span>Updated {new Date(workflow.updatedAt).toLocaleDateString()}</span>
-                    <span>{workflow.nodes.length} nodes</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-cco-neutral-200">
-                    <div className="flex space-x-2">
-                      {workflow.status === 'active' ? (
-                        <button 
-                          className="p-2 text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200 transition-colors"
-                          title="Pause Workflow"
-                        >
-                          <PauseIcon className="w-5 h-5" />
-                        </button>
-                      ) : (
-                        <button 
-                          className="p-2 text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
-                          title="Start Workflow"
-                        >
-                          <PlayIcon className="w-5 h-5" />
-                        </button>
-                      )}
-                      <button 
-                        className="p-2 text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                        title="Refresh Workflow"
-                      >
-                        <ArrowPathIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <button 
-                      onClick={() => handleEditWorkflow(workflow)}
+                </div>
+                <div className="flex items-center space-x-3">
+                  {selectedTemplate && (
+                    <motion.button 
+                      onClick={handleBackToList}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       className="px-4 py-2 bg-cco-neutral-100 text-cco-neutral-700 rounded-md hover:bg-cco-neutral-200 transition-colors"
                     >
-                      Edit Workflow
-                    </button>
-                  </div>
+                      Back to Templates
+                    </motion.button>
+                  )}
+                  <button
+                    onClick={() => setShowKeyboardTips(prev => !prev)}
+                    className="p-2 text-cco-neutral-600 hover:text-cco-neutral-900 hover:bg-cco-neutral-100 rounded-md transition-colors"
+                    title="Show Keyboard Shortcuts"
+                  >
+                    <CommandLineIcon className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </motion.div>
 
-          {/* Editor Modal */}
-          {mode !== 'list' && (
-            <div className="fixed inset-0 bg-black/20 z-40">
-              <div className="absolute inset-4 bg-white rounded-xl shadow-2xl overflow-hidden">
-                <div className="p-6 border-b border-cco-neutral-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-bold text-cco-neutral-900">
-                        {mode === 'create' ? 'Create New Workflow' : `Edit: ${selectedWorkflow?.name}`}
-                      </h1>
-                      <p className="text-cco-neutral-700">
-                        {mode === 'create' 
-                          ? 'Start with a template or create your own workflow from scratch.' 
-                          : selectedWorkflow?.description}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={handleBackToList}
-                      className="bg-cco-neutral-100 text-cco-neutral-700 px-4 py-2 rounded-md hover:bg-cco-neutral-200 transition-colors"
+            {/* Main Content Area */}
+            <div className="bg-white rounded-xl p-6">
+              {!selectedTemplate ? (
+                <div className="space-y-6">
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    layout
+                  >
+                    {/* Empty Template Card */}
+                    <motion.div 
+                      onClick={() => {
+                        setSelectedTemplate(EMPTY_TEMPLATE);
+                        setMode('edit');
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group cursor-pointer bg-white border-2 border-dashed border-cco-neutral-200 rounded-xl p-6 hover:border-cco-primary-500 hover:bg-cco-primary-50 transition-all"
                     >
-                      Close Editor
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="h-[calc(100%-5rem)] p-6 overflow-y-auto">
-                  {mode === 'create' && !selectedTemplate ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {/* Empty Template Card */}
-                      <div 
-                        onClick={() => setSelectedTemplate(EMPTY_TEMPLATE)}
-                        className="group cursor-pointer bg-white border-2 border-dashed border-cco-neutral-200 rounded-xl p-6 hover:border-cco-primary-500 hover:bg-cco-primary-50 transition-all"
+                      <motion.div 
+                        className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-neutral-100 group-hover:bg-white mb-4"
+                        whileHover={{ rotate: 180 }}
                       >
-                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-neutral-100 group-hover:bg-white mb-4">
-                          <PlusIcon className="w-6 h-6 text-cco-neutral-600 group-hover:text-cco-primary-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-cco-neutral-900 mb-2">Start from Scratch</h3>
-                        <p className="text-sm text-cco-neutral-600">
-                          Create a custom workflow with your own nodes and connections.
-                        </p>
-                      </div>
+                        <PlusIcon className="w-6 h-6 text-cco-neutral-600 group-hover:text-cco-primary-600" />
+                      </motion.div>
+                      <h3 className="text-lg font-semibold text-cco-neutral-900 mb-2">Connect a Data Provider</h3>
+                      <p className="text-sm text-cco-neutral-600">
+                        Set up a custom connection to your preferred data storage service or API.
+                      </p>
+                    </motion.div>
 
-                      {/* Template Cards */}
+                    {/* Template Cards */}
+                    <AnimatePresence>
                       {INTEGRATION_TEMPLATES.map((template) => (
-                        <div 
+                        <DraggableTemplateCard
                           key={template.id}
-                          onClick={() => setSelectedTemplate(template)}
-                          className="group cursor-pointer bg-white border border-cco-neutral-200 rounded-xl p-6 hover:shadow-md transition-all"
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-primary-100 text-cco-primary-600">
-                                {template.icon}
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-semibold text-cco-neutral-900 group-hover:text-cco-primary-600 transition-colors">
-                                  {template.name}
-                                </h3>
-                                <span className="text-xs font-medium text-cco-neutral-500">
-                                  {template.category}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <p className="text-sm text-cco-neutral-600 mb-4">
-                            {template.description}
-                          </p>
-                          
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="px-2 py-1 rounded-full bg-cco-neutral-100 text-cco-neutral-700">
-                              {template.complexity}
-                            </span>
-                            <span className="text-cco-neutral-500">
-                              ⏱️ {template.estimatedTime}
-                            </span>
-                          </div>
-
-                          {/* Preview */}
-                          <div className="mt-4 pt-4 border-t border-cco-neutral-100">
-                            <div className="flex items-center space-x-2">
-                              {template.nodes.map((node, index) => (
-                                <React.Fragment key={node.id}>
-                                  <div className="px-2 py-1 rounded bg-cco-neutral-50 text-xs text-cco-neutral-700">
-                                    {node.data.label}
-                                  </div>
-                                  {index < template.nodes.length - 1 && (
-                                    <ChevronRightIcon className="w-4 h-4 text-cco-neutral-400" />
-                                  )}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+                          template={template}
+                          onSelect={() => {
+                            setSelectedTemplate(template);
+                            setMode('edit');
+                          }}
+                        />
                       ))}
-                    </div>
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
+              ) : (
+                <motion.div 
+                  className="h-full"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  {selectedTemplate.id === 'google-drive' || selectedTemplate.id === 'dropbox' ? (
+                    <FileSyncView provider={selectedTemplate.id} />
                   ) : (
                     <DataIntegrationNodeEditor 
-                      workflow={selectedTemplate ? createWorkflowFromTemplate(selectedTemplate) : selectedWorkflow} 
+                      workflow={createWorkflowFromTemplate(selectedTemplate)} 
                       mode={mode}
                     />
                   )}
-                </div>
-              </div>
+                </motion.div>
+              )}
             </div>
-          )}
-        </div>
+          </motion.div>
+        </DndProvider>
       </DashboardLayout>
     </>
   );
