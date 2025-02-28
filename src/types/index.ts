@@ -138,4 +138,37 @@ export interface IntegrationEdge {
   target: string;
   animated?: boolean;
   label?: string;
+}
+
+export interface UserSettings {
+  id: string;
+  userId: string;
+  emailNotifications: {
+    meetings: boolean;
+    documents: boolean;
+    actionItems: boolean;
+    projectUpdates: boolean;
+  };
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  timezone: string;
+  dateFormat: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
+  timeFormat: '12h' | '24h';
+  accessibility: {
+    highContrast: boolean;
+    largeText: boolean;
+    reduceMotion: boolean;
+  };
+  privacy: {
+    shareUsageData: boolean;
+    allowCookies: boolean;
+  };
+  integration: {
+    connectedServices: {
+      id: string;
+      name: string;
+      connected: boolean;
+      lastSync?: string;
+    }[];
+  };
 } 

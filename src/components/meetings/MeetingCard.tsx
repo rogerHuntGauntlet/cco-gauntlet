@@ -17,9 +17,9 @@ export function MeetingCard({ meeting, showActions = true }: MeetingCardProps) {
   const relativeTime = formatDistance(meetingDate, new Date(), { addSuffix: true });
   
   const statusColors = {
-    scheduled: 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
-    canceled: 'bg-red-100 text-red-800',
+    scheduled: 'bg-cco-primary-100 text-cco-primary-800',
+    completed: 'bg-cco-neutral-100 text-cco-neutral-800',
+    canceled: 'bg-cco-accent-100 text-cco-accent-800',
   };
   
   return (
