@@ -9,6 +9,7 @@ CCO (Chief Cognitive Officer) is an AI-powered platform that enhances client-dev
 - **Dashboard Experience**: View and manage all your meetings, documents, and projects in a unified interface
 - **Client-Vibecoder Matching**: Connect clients with developers who match their communication style and project needs
 - **Recommendations**: Receive real-time suggestions during meetings to improve communication and project outcomes
+- **AI Assistance**: Get intelligent answers and suggestions powered by Amazon Bedrock AI integration
 
 ## Getting Started
 
@@ -69,6 +70,22 @@ cco-platform/
 - **Data Visualization**: Chart.js, React-ChartJS-2
 - **Content Rendering**: React Markdown
 - **Date Handling**: date-fns
+- **AI Integration**: Amazon Bedrock with Claude 3 models
+
+## Amazon Bedrock Integration
+
+The platform includes integration with Amazon Bedrock for AI capabilities. For detailed setup and usage instructions, see [README-BEDROCK.md](README-BEDROCK.md).
+
+Key features:
+- AI-powered chat interface
+- Contextual answers based on project information
+- Support for multiple AI models (Claude, Titan)
+- Simple API for developers to integrate AI capabilities into any component
+
+Setting up Bedrock requires:
+1. AWS credentials with Bedrock access
+2. Configuration in your `.env.local` file
+3. Enabling access to the AI models in AWS Bedrock console
 
 ## Contributing
 

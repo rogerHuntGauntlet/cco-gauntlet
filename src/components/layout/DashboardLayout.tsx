@@ -89,6 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = router.pathname === item.href || router.pathname.startsWith(`${item.href}/`);
+              const Icon = item.icon as React.ComponentType<{ className: string }>;
               return (
                 <Link
                   key={item.name}
@@ -99,7 +100,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       : 'text-cco-neutral-700 hover:bg-cco-neutral-100'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-cco-primary-700' : 'text-cco-neutral-700'}`} />
+                  <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-cco-primary-700' : 'text-cco-neutral-700'}`} />
                   {item.name}
                 </Link>
               );

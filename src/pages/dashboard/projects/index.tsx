@@ -154,6 +154,7 @@ const ProjectsPage: React.FC = () => {
     selectedService: null,
     generatedPrompt: null
   });
+  const [showCursorInstructionsModal, setShowCursorInstructionsModal] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
@@ -388,6 +389,17 @@ Please generate the code for the main interface components.`;
     }
   };
   
+  // New function to show launch instructions for Cursor
+  const showCursorLaunchInstructions = () => {
+    // Copy prompt to clipboard first
+    if (aiServiceModal.generatedPrompt) {
+      navigator.clipboard.writeText(aiServiceModal.generatedPrompt);
+    }
+    
+    // Show our custom modal with instructions
+    setShowCursorInstructionsModal(true);
+  };
+  
   // Add this component for the AI Service Modal
   const AIServiceModal = () => {
     if (!aiServiceModal.isOpen) return null;
@@ -411,6 +423,104 @@ Please generate the code for the main interface components.`;
       'Replit': 'https://replit.com',
       'Windsurf': 'https://windsurf.codeium.com',
       'Cursor': 'https://cursor.sh'
+    };
+    
+    // Function to try opening Cursor application
+    const launchCursorApp = () => {
+      // Try multiple protocol handlers for different platforms
+      // This includes cursor://, cursor-app://, cursor:, etc.
+      const protocolHandlers = [
+        'cursor://',             // Standard protocol
+        'cursor:',               // Windows protocol format
+        'cursor-app://',         // Alternative format sometimes used
+        'cursor-editor://'       // Another possible format
+      ];
+      
+      let handlerIndex = 0;
+      let handlerSuccess = false;
+      
+      // Function to try the next protocol handler in the list
+      const tryNextHandler = () => {
+        if (handlerIndex >= protocolHandlers.length || handlerSuccess) {
+          // We've tried all handlers or one was successful
+          if (!handlerSuccess) {
+            // None worked, offer to download Cursor
+            if (confirm('Cursor app doesn\'t seem to be installed or couldn\'t be launched. Would you like to download Cursor?')) {
+              window.open('https://cursor.sh/download', '_blank', 'noopener,noreferrer');
+            }
+          }
+          return;
+        }
+        
+        const currentHandler = protocolHandlers[handlerIndex++];
+        
+        // Create an invisible iframe to try the protocol without changing the page
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Set a timer to detect if the protocol launch failed
+        const protocolTimer = setTimeout(() => {
+          // Protocol failed, try the next one
+          document.body.removeChild(iframe);
+          tryNextHandler();
+        }, 500); // Shorter timeout since we're trying multiple options
+        
+        // Listen for successful protocol launch
+        iframe.onload = () => {
+          clearTimeout(protocolTimer);
+          handlerSuccess = true;
+          document.body.removeChild(iframe);
+          console.log('Successfully launched Cursor with protocol:', currentHandler);
+        };
+        
+        // Try to navigate to the protocol URL
+        try {
+          iframe.src = currentHandler;
+        } catch (e) {
+          // Error occurred, clean up and try next handler
+          clearTimeout(protocolTimer);
+          document.body.removeChild(iframe);
+          console.error('Error with protocol:', currentHandler, e);
+          tryNextHandler();
+        }
+      };
+      
+      // Start trying protocol handlers
+      tryNextHandler();
+      
+      // Also try direct method using window.open
+      try {
+        const windowOpened = window.open('cursor://', '_blank');
+        // If window is null, blocked by popup blocker
+        if (!windowOpened) {
+          console.log('Direct window.open blocked by browser');
+        }
+      } catch (e) {
+        console.error('Error with direct window.open:', e);
+      }
+      
+      // Try Windows-specific approaches
+      if (navigator.userAgent.indexOf('Windows') !== -1) {
+        // Create a hidden anchor tag for Windows URL protocol
+        const winLink = document.createElement('a');
+        winLink.style.display = 'none';
+        winLink.href = 'cursor://';
+        winLink.setAttribute('target', '_blank');
+        document.body.appendChild(winLink);
+        
+        // Simulate a click on the link
+        try {
+          winLink.click();
+        } catch (e) {
+          console.error('Windows URL protocol approach failed:', e);
+        } finally {
+          // Clean up the anchor tag
+          setTimeout(() => {
+            document.body.removeChild(winLink);
+          }, 100);
+        }
+      }
     };
     
     return ReactDOM.createPortal(
@@ -473,23 +583,38 @@ Please generate the code for the main interface components.`;
                   Back to AI Services
                 </Button>
                 
-                <Button 
-                  variant="default"
-                  onClick={() => {
-                    if (aiServiceModal.generatedPrompt) {
-                      navigator.clipboard.writeText(aiServiceModal.generatedPrompt);
-                      // Show alert that prompt was copied
-                      alert("Prompt copied to clipboard!");
-                      
-                      // If the selected service is Replit, open the Replit website
-                      if (aiServiceModal.selectedService === 'Replit' && serviceUrls.Replit) {
-                        window.open(serviceUrls.Replit, '_blank', 'noopener,noreferrer');
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="default"
+                    onClick={() => {
+                      if (aiServiceModal.generatedPrompt) {
+                        navigator.clipboard.writeText(aiServiceModal.generatedPrompt);
+                        // Show alert that prompt was copied
+                        alert("Prompt copied to clipboard!");
+                        
+                        // If the selected service is Replit, open the Replit website
+                        if (aiServiceModal.selectedService === 'Replit' && serviceUrls.Replit) {
+                          window.open(serviceUrls.Replit, '_blank', 'noopener,noreferrer');
+                        }
                       }
-                    }
-                  }}
-                >
-                  Copy to Clipboard
-                </Button>
+                    }}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                  
+                  {/* Add launch button for Cursor */}
+                  {aiServiceModal.selectedService === 'Cursor' && (
+                    <Button 
+                      variant="accent"
+                      onClick={() => {
+                        // Try to launch Cursor desktop app
+                        showCursorLaunchInstructions();
+                      }}
+                    >
+                      Use with Cursor
+                    </Button>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -632,7 +757,7 @@ Please generate the code for the main interface components.`;
                   className="px-3"
                   onClick={(e) => handleAIAssist(project, e)}
                   title="AI Assistant"
-                  ref={el => buttonRefs.current[project.id] = el}
+                  ref={el => { buttonRefs.current[project.id] = el; }}
                 >
                   <SparklesIcon className="w-5 h-5" />
                 </Button>
@@ -712,6 +837,136 @@ Please generate the code for the main interface components.`;
           Clear Filters
         </Button>
       </div>
+    );
+  };
+
+  // Add a new component for the Cursor Instructions Modal
+  const CursorInstructionsModal = () => {
+    if (!showCursorInstructionsModal) return null;
+    
+    const isWindows = navigator.userAgent.indexOf('Windows') !== -1;
+    const isMac = navigator.userAgent.indexOf('Mac') !== -1;
+    
+    return ReactDOM.createPortal(
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-cco-neutral-900">
+              Using Your Prompt with Cursor
+            </h3>
+            <button 
+              onClick={() => setShowCursorInstructionsModal(false)}
+              className="text-cco-neutral-500 hover:text-cco-neutral-700"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex items-center text-green-600 mb-4">
+              <CheckCircleIcon className="w-6 h-6 mr-2" />
+              <p className="font-medium">Prompt copied to clipboard!</p>
+            </div>
+            
+            <p className="text-cco-neutral-600 mb-4">
+              Due to browser security restrictions, we can't directly open the Cursor desktop app for you.
+              Please follow these steps:
+            </p>
+            
+            <div className="bg-cco-neutral-50 p-4 rounded-lg border border-cco-neutral-200 mb-4">
+              <h4 className="font-medium text-cco-neutral-900 mb-2">
+                {isWindows ? 'Windows' : isMac ? 'Mac' : 'General'} Instructions:
+              </h4>
+              <ol className="list-decimal pl-5 space-y-2 text-cco-neutral-700">
+                <li>Open the Cursor desktop app manually</li>
+                <li>Press {isWindows ? 'Ctrl+V' : isMac ? 'Cmd+V' : 'Paste'} to paste the prompt</li>
+                <li>Press {isWindows ? 'Ctrl+Enter' : isMac ? 'Cmd+Enter' : 'Enter'} to submit</li>
+              </ol>
+            </div>
+            
+            {isWindows && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                  <span className="mr-2">💡</span> Windows Tips:
+                </h4>
+                <p className="text-blue-700 mb-3">
+                  If you have Cursor installed, you can also try typing "cursor" in the Windows search (Start menu) 
+                  to quickly find and open the app.
+                </p>
+                <button 
+                  className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors w-full mb-3"
+                  onClick={() => {
+                    // Try to use the Windows Run dialog approach
+                    try {
+                      const link = document.createElement('a');
+                      link.href = 'cursor://';
+                      document.body.appendChild(link);
+                      link.click();
+                      setTimeout(() => {
+                        document.body.removeChild(link);
+                      }, 100);
+                    } catch (e) {
+                      console.error('Windows link click approach failed:', e);
+                    }
+                  }}
+                >
+                  Try to Launch Cursor
+                </button>
+                
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2">For advanced users:</h4>
+                  <p className="text-sm text-blue-700 mb-2">
+                    You can try to run Cursor from these common installation paths:
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <button 
+                      className="text-blue-800 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded text-xs font-mono transition-colors text-left"
+                      onClick={() => {
+                        const runCmd = `powershell -Command "Start-Process -FilePath 'C:\\Users\\${navigator.userAgent.split('NT ')[1]?.split(';')[0] || 'CURRENT_USER'}\\AppData\\Local\\Programs\\Cursor\\Cursor.exe'"`;
+                        console.log("Would execute:", runCmd);
+                        alert("Due to browser security restrictions, we can't run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
+                      }}
+                    >
+                      %LOCALAPPDATA%\Programs\Cursor\Cursor.exe
+                    </button>
+                    <button 
+                      className="text-blue-800 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded text-xs font-mono transition-colors text-left"
+                      onClick={() => {
+                        alert("Due to browser security restrictions, we can't run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
+                      }}
+                    >
+                      %PROGRAMFILES%\Cursor\Cursor.exe
+                    </button>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-blue-600 mt-2">
+                  Note: These methods may not work due to browser security restrictions, but they're worth a try!
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCursorInstructionsModal(false)}
+            >
+              Close
+            </Button>
+            
+            <Button 
+              variant="accent"
+              onClick={() => {
+                window.open('https://cursor.sh/download', '_blank', 'noopener,noreferrer');
+              }}
+            >
+              Download Cursor
+            </Button>
+          </div>
+        </div>
+      </div>,
+      document.body
     );
   };
 
@@ -939,6 +1194,9 @@ Please generate the code for the main interface components.`;
           )}
         </div>
       </DashboardLayout>
+      
+      {/* Add the Cursor Instructions Modal */}
+      <CursorInstructionsModal />
     </>
   );
 };
