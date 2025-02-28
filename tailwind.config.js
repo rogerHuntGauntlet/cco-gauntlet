@@ -50,6 +50,10 @@ module.exports = {
       boxShadow: {
         'cco': '0 4px 14px 0 rgba(0, 118, 255, 0.39)',
       },
+      animation: {
+        'spin-slow': 'spin 5s linear infinite',
+        'pulse-slow': 'pulse 3s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
