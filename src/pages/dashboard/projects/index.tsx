@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import Head from 'next/head';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import { 
@@ -12,10 +13,14 @@ import {
   ListBulletIcon,
   TagIcon,
   CheckCircleIcon,
-  FolderIcon
+  FolderIcon,
+  ShareIcon,
+  SparklesIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
+import { useRouter } from 'next/router';
 
 // Define project types
 interface Project {
@@ -125,6 +130,14 @@ interface ProjectFilters {
   tags: string[];
 }
 
+// Add this new interface
+interface AIServiceModalState {
+  isOpen: boolean;
+  projectId: string | null;
+  selectedService: string | null;
+  generatedPrompt: string | null;
+}
+
 const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,6 +147,37 @@ const ProjectsPage: React.FC = () => {
     tags: []
   });
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Replace the dropdown state with modal state
+  const [aiServiceModal, setAIServiceModal] = useState<AIServiceModalState>({
+    isOpen: false,
+    projectId: null,
+    selectedService: null,
+    generatedPrompt: null
+  });
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const buttonRefs = useRef<{[key: string]: HTMLButtonElement | null}>({});
+  const router = useRouter();
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // If we have an active dropdown and click is not on the button
+      if (activeDropdownId) {
+        const buttonElement = buttonRefs.current[activeDropdownId];
+        
+        if (buttonElement && !buttonElement.contains(event.target as Node)) {
+          setActiveDropdownId(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDropdownId]);
   
   // Compute all available tags for filtering
   const allTags = Array.from(
@@ -176,10 +220,68 @@ const ProjectsPage: React.FC = () => {
   };
 
   const handleProjectClick = (projectId: string) => {
-    // In a real app, this would navigate to project details
-    console.log('Navigate to project', projectId);
+    // Navigate to project details page
+    router.push(`/dashboard/projects/${projectId}`);
   };
 
+  const handleShareVibes = (project: Project, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    // Create the shareable link using window.location.origin
+    const origin = window.location.origin;
+    const shareableLink = `${origin}/shared-project/${project.id}`;
+    
+    // Copy link to clipboard
+    navigator.clipboard.writeText(shareableLink)
+      .then(() => {
+        // Show success message - could be replaced with a toast notification in a real app
+        alert(`Link copied to clipboard! Anyone with this link can view the "${project.name}" project.`);
+      })
+      .catch((error) => {
+        console.error('Failed to copy link:', error);
+        alert(`Error copying link. Please copy manually: ${shareableLink}`);
+      });
+  };
+
+  // Replace handleAIAssist with this new version
+  const handleAIAssist = (project: Project, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Open the modal with the current project
+    setAIServiceModal({
+      isOpen: true,
+      projectId: project.id,
+      selectedService: null,
+      generatedPrompt: null
+    });
+  };
+  
+  // Add this new function to select an AI service
+  const handleSelectAIService = (serviceName: string) => {
+    const project = projects.find(p => p.id === aiServiceModal.projectId);
+    if (!project) return;
+    
+    // Generate a platform-specific prompt based on the project details
+    const prompt = generatePlatformPrompt(serviceName, project);
+    
+    setAIServiceModal(prev => ({
+      ...prev,
+      selectedService: serviceName,
+      generatedPrompt: prompt
+    }));
+  };
+  
+  // Add this function to close the modal
+  const closeAIServiceModal = () => {
+    setAIServiceModal({
+      isOpen: false,
+      projectId: null,
+      selectedService: null,
+      generatedPrompt: null
+    });
+  };
+  
+  // Restore these filter functions that were accidentally removed
   const toggleStatusFilter = (status: string) => {
     setFilters(prev => {
       const statusFilters = prev.status.includes(status)
@@ -218,7 +320,185 @@ const ProjectsPage: React.FC = () => {
     });
     setSearchQuery('');
   };
+  
+  // Add this function to generate platform-specific prompts
+  const generatePlatformPrompt = (platform: string, project: Project): string => {
+    const projectTags = project.tags.join(", ");
+    const teamMembers = project.teamMembers.map(m => m.name).join(", ");
+    const dueDate = project.dueDate ? new Date(project.dueDate).toLocaleDateString() : "No deadline";
+    
+    // Base prompt content that's common across platforms
+    const basePrompt = `Project: ${project.name}
+Description: ${project.description}
+Status: ${project.status}
+Priority: ${project.priority}
+Progress: ${project.progress}%
+Tags: ${projectTags}
+Team: ${teamMembers}
+Due Date: ${dueDate}
+`;
+    
+    // Platform-specific prompt formatting and additional instructions
+    switch(platform) {
+      case 'Cursor':
+        return `/* Cursor AI Prompt */
+${basePrompt}
+TASK: Please help me implement the next feature for this project. Consider the project description and status.
+Focus on clean, maintainable code with proper documentation.
+Suggest unit tests where appropriate.`;
+        
+      case 'Replit':
+        return `# Replit AI Assistant
+${basePrompt}
+I need help with this project on Replit. Please provide:
+1. A step-by-step implementation plan
+2. Code snippets that I can immediately use
+3. Ideas for how to structure the application`;
+        
+      case 'Windsurf':
+        return `// Windsurf by Codeium
+${basePrompt}
+CONTEXT: I'm working on this project and need implementation assistance.
+GOAL: Help me develop new features or fix issues related to this project.
+QUESTION: What's the best way to proceed with the next development phase?`;
+        
+      case 'Lovable':
+        return `# Lovable AI Design Assistant
+${basePrompt}
+I need help designing the UI/UX for this project:
+- Create a visually appealing interface that matches the project's purpose
+- Ensure good usability and accessibility
+- Provide mockups or wireframes for key screens
+- Suggest color schemes and typography that fit the project's tone`;
+        
+      case 'v0':
+        return `// v0 by Vercel Prompt
+${basePrompt}
+I need to generate a UI for this project using v0.
+Key requirements:
+- Clean, modern interface
+- Responsive design
+- Follow best accessibility practices
+- Components should be reusable
 
+Please generate the code for the main interface components.`;
+        
+      default:
+        return basePrompt;
+    }
+  };
+  
+  // Add this component for the AI Service Modal
+  const AIServiceModal = () => {
+    if (!aiServiceModal.isOpen) return null;
+    
+    const project = projects.find(p => p.id === aiServiceModal.projectId);
+    if (!project) return null;
+    
+    // Service options with their logos
+    const serviceOptions = [
+      { name: 'Cursor', logo: '/cursor.jpeg' },
+      { name: 'Windsurf', logo: '/windsurf.jpeg' },
+      { name: 'Replit', logo: '/replit.png' },
+      { name: 'Lovable', logo: '/lovable.jpeg' },
+      { name: 'v0', logo: '/v0.png' }
+    ];
+    
+    // Define the URLs for each service
+    const serviceUrls = {
+      'v0': 'https://v0.dev',
+      'Lovable': 'https://ai.lovable.ai',
+      'Replit': 'https://replit.com',
+      'Windsurf': 'https://windsurf.codeium.com',
+      'Cursor': 'https://cursor.sh'
+    };
+    
+    return ReactDOM.createPortal(
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-cco-neutral-900">
+              {aiServiceModal.selectedService 
+                ? `${aiServiceModal.selectedService} AI Prompt for ${project.name}` 
+                : `Generate AI Assistant Prompt for ${project.name}`}
+            </h3>
+            <button 
+              onClick={closeAIServiceModal}
+              className="text-cco-neutral-500 hover:text-cco-neutral-700"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+          
+          {!aiServiceModal.selectedService ? (
+            <>
+              <p className="text-cco-neutral-600 mb-4">
+                Select an AI assistant platform to generate a tailored prompt for this project.
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                {serviceOptions.map(service => (
+                  <button
+                    key={service.name}
+                    className="flex flex-col items-center justify-center p-4 border border-cco-neutral-200 rounded-lg hover:bg-cco-neutral-50 transition-colors"
+                    onClick={() => handleSelectAIService(service.name)}
+                  >
+                    <img 
+                      src={service.logo} 
+                      alt={`${service.name} logo`} 
+                      className="w-12 h-12 object-contain mb-3"
+                    />
+                    <span className="font-medium text-cco-neutral-900">{service.name}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-4">
+                <p className="text-cco-neutral-600 mb-2">
+                  Below is a generated prompt optimized for {aiServiceModal.selectedService}. Copy this and paste it into the {aiServiceModal.selectedService} interface.
+                </p>
+                
+                <div className="bg-cco-neutral-50 border border-cco-neutral-200 rounded-md p-4 font-mono text-sm whitespace-pre-wrap overflow-auto max-h-96">
+                  {aiServiceModal.generatedPrompt}
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <Button 
+                  variant="outline"
+                  onClick={() => setAIServiceModal(prev => ({...prev, selectedService: null, generatedPrompt: null}))}
+                >
+                  Back to AI Services
+                </Button>
+                
+                <Button 
+                  variant="default"
+                  onClick={() => {
+                    if (aiServiceModal.generatedPrompt) {
+                      navigator.clipboard.writeText(aiServiceModal.generatedPrompt);
+                      // Show alert that prompt was copied
+                      alert("Prompt copied to clipboard!");
+                      
+                      // If the selected service is Replit, open the Replit website
+                      if (aiServiceModal.selectedService === 'Replit' && serviceUrls.Replit) {
+                        window.open(serviceUrls.Replit, '_blank', 'noopener,noreferrer');
+                      }
+                    }
+                  }}
+                >
+                  Copy to Clipboard
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>,
+      document.body
+    );
+  };
+  
   // Project card component
   const ProjectCard = ({ project }: { project: Project }) => {
     const daysUntilDue = project.dueDate 
@@ -332,6 +612,32 @@ const ProjectsPage: React.FC = () => {
                 )}
               </div>
             )}
+            
+            {/* Share Vibes Button */}
+            <div className="mt-4 flex gap-2" onClick={e => e.stopPropagation()}>
+              <Button 
+                variant="accent" 
+                size="sm" 
+                className="flex-1"
+                onClick={(e) => handleShareVibes(project, e)}
+              >
+                <ShareIcon className="w-5 h-5 mr-2" />
+                Share Vibes
+              </Button>
+              
+              <div className="relative">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="px-3"
+                  onClick={(e) => handleAIAssist(project, e)}
+                  title="AI Assistant"
+                  ref={el => buttonRefs.current[project.id] = el}
+                >
+                  <SparklesIcon className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -420,6 +726,9 @@ const ProjectsPage: React.FC = () => {
       </Head>
       
       <DashboardLayout>
+        {/* Replace the AIServicesDropdown with AIServiceModal */}
+        <AIServiceModal />
+        
         <div className="container mx-auto px-4">
           {/* Header with actions */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
