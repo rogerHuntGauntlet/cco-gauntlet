@@ -14,7 +14,9 @@ export function MeetingCard({ meeting, showActions = true }: MeetingCardProps) {
   const meetingDate = new Date(meeting.date);
   const formattedDate = format(meetingDate, 'MMM d, yyyy');
   const formattedTime = format(meetingDate, 'h:mm a');
-  const relativeTime = formatDistance(meetingDate, new Date(), { addSuffix: true });
+  
+  const relativeTimeText = meeting.status === 'completed' ? 'Completed' : 
+                          meeting.status === 'scheduled' ? 'Upcoming' : 'Canceled';
   
   const statusColors = {
     scheduled: 'bg-cco-primary-100 text-cco-primary-800',
@@ -29,7 +31,7 @@ export function MeetingCard({ meeting, showActions = true }: MeetingCardProps) {
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[meeting.status]}`}>
             {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
           </span>
-          <span className="text-xs text-cco-neutral-700">{relativeTime}</span>
+          <span className="text-xs text-cco-neutral-700">{relativeTimeText}</span>
         </div>
         
         <h3 className="text-lg font-semibold mb-2 text-cco-neutral-900">{meeting.title}</h3>

@@ -180,7 +180,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </span>
             </button>
             {/* Notification Bell */}
-            <Link href="/notifications" className="p-1 rounded-md text-cco-neutral-700 hover:bg-cco-neutral-100 relative group">
+            <Link href="/dashboard/notifications" className="p-1 rounded-md text-cco-neutral-700 hover:bg-cco-neutral-100 relative group">
               <BellIcon className="w-6 h-6" />
               {unreadNotificationsCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex items-center justify-center bg-cco-accent-500 text-white text-xs font-medium rounded-full min-w-5 h-5 px-1.5">
