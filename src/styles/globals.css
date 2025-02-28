@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-cco-neutral-50 text-cco-neutral-900;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  h5 {
+    @apply text-lg md:text-xl;
+  }
+  
+  h6 {
+    @apply text-base md:text-lg;
+  }
+}
+
+@layer components {
+  .cco-btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+  }
+  
+  .cco-btn-primary {
+    @apply cco-btn bg-cco-primary-600 text-white hover:bg-cco-primary-700;
+  }
+  
+  .cco-btn-secondary {
+    @apply cco-btn bg-cco-neutral-200 text-cco-neutral-800 hover:bg-cco-neutral-300;
+  }
+  
+  .cco-btn-accent {
+    @apply cco-btn bg-cco-accent-600 text-white hover:bg-cco-accent-700;
+  }
+  
+  .cco-card {
+    @apply bg-white rounded-xl shadow-md border border-cco-neutral-200 p-6;
+  }
+  
+  .cco-input {
+    @apply w-full px-4 py-2 rounded-md border border-cco-neutral-300 focus:outline-none focus:ring-2 focus:ring-cco-primary-500 focus:border-transparent;
+  }
+}
+
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Primary Colors */
+  --color-midnight-blue: #121C42;
+  --color-electric-indigo: #6016FC;
+  --color-cosmic-latte: #FFF8E7;
+  
+  /* Secondary Colors */
+  --color-neon-teal: #00F5D4;
+  --color-digital-lavender: #D9C6F5;
+  --color-electric-crimson: #FF003C;
+  
+  /* Neutral Colors */
+  --color-obsidian: #1E1E2E;
+  --color-cosmic-grey: #2A2A3A;
+  --color-stardust: #8B8B9E;
+  --color-nebula-white: #E9E9F0;
+  
+  /* Semantic Colors */
+  --color-background-primary: var(--color-midnight-blue);
+  --color-background-secondary: var(--color-obsidian);
+  --color-background-tertiary: var(--color-cosmic-grey);
+  
+  --color-text-primary: var(--color-nebula-white);
+  --color-text-secondary: var(--color-stardust);
+  --color-text-inverted: var(--color-midnight-blue);
+  
+  --color-accent-primary: var(--color-electric-indigo);
+  --color-accent-secondary: var(--color-neon-teal);
+  --color-accent-tertiary: var(--color-digital-lavender);
+  
+  --color-status-success: var(--color-neon-teal);
+  --color-status-error: var(--color-electric-crimson);
+  --color-status-warning: #FFAA00;
+  --color-status-info: #0099FF;
+
+  /* Font Families */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-md: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+  
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.01em;
+  --letter-spacing-wider: 0.02em;
+
+  /* Spacing */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-80: 80px;
+  --space-96: 96px;
+  --space-128: 128px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-round: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0px 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0px 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0px 4px 8px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 8px 16px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-inner: inset 0px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-primary);
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+a {
+  color: var(--color-accent-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-accent-secondary);
+  text-decoration: underline;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 0 0 var(--space-16) 0;
+}
+
+h1 {
+  font-size: var(--font-size-4xl);
+}
+
+h2 {
+  font-size: var(--font-size-3xl);
+}
+
+h3 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-medium);
+}
+
+h4 {
+  font-size: var(--font-size-xl);
+}
+
+h5 {
+  font-size: var(--font-size-lg);
+}
+
+h6 {
+  font-size: var(--font-size-md);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+p {
+  margin: 0 0 var(--space-16) 0;
+  line-height: var(--line-height-normal);
+}
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-background-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+code {
+  padding: var(--space-2) var(--space-4);
+}
+
+pre {
+  padding: var(--space-16);
+  overflow-x: auto;
+  margin: 0 0 var(--space-24) 0;
+}
+
+button {
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-medium);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+  
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  h3 {
+    font-size: var(--font-size-xl);
+  }
+} 
