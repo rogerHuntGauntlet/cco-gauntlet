@@ -23,8 +23,11 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [panelWidth, setPanelWidth] = useState(384); // Default width of 96 in rem (384px)
+  const [isResizing, setIsResizing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -41,6 +44,40 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
       }, 100);
     }
   }, [isOpen]);
+
+  // Handle resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      // Calculate new width (distance from right edge of screen to cursor)
+      const newWidth = window.innerWidth - e.clientX;
+      
+      // Set minimum and maximum widths
+      if (newWidth >= 280 && newWidth <= 1200) {
+        setPanelWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +121,19 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl z-50 flex flex-col border-l border-cco-neutral-200 transition-transform duration-300 ease-in-out transform translate-x-0 animate-slide-in">
+    <div 
+      className="fixed inset-y-0 right-0 bg-white shadow-xl z-50 flex flex-col border-l border-cco-neutral-200 transition-transform duration-300 ease-in-out transform translate-x-0 animate-slide-in"
+      style={{ width: `${panelWidth}px` }}
+    >
+      {/* Resize handle */}
+      <div 
+        ref={resizeRef}
+        className="absolute inset-y-0 left-0 w-1 bg-transparent hover:bg-cco-primary-300 cursor-ew-resize group"
+        onMouseDown={startResizing}
+      >
+        <div className="absolute inset-y-0 left-0 w-1 bg-cco-primary-400 opacity-0 group-hover:opacity-50"></div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-cco-neutral-200">
         <div className="flex items-center space-x-2">

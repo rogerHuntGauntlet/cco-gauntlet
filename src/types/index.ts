@@ -72,6 +72,7 @@ export interface Dashboard {
   activeProjects: Project[];
   recentDocuments: Document[];
   pendingActionItems: ActionItem[];
+  notifications: Notification[];
 }
 
 export interface MeetingInsight {
@@ -171,4 +172,22 @@ export interface UserSettings {
       lastSync?: string;
     }[];
   };
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'meeting' | 'document' | 'action' | 'project' | 'system';
+  isRead: boolean;
+  createdAt: string;
+  link?: string;
+  relatedItemId?: string;
+  relatedItemType?: 'meeting' | 'document' | 'project' | 'action';
+  icon?: string;
+}
+
+export interface NotificationsState {
+  notifications: Notification[];
+  unreadCount: number;
 } 
