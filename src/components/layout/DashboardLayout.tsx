@@ -15,6 +15,7 @@ import {
   CircleStackIcon
 } from '@heroicons/react/24/outline';
 import VibeChatPanel from '../ui/VibeChatPanel';
+import { notifications } from '../../utils/mockData';
 
 interface NavItem {
   name: string;
@@ -39,6 +40,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [vibeMode, setVibeMode] = useState(false);
+
+  // Get unread notification count
+  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -175,10 +179,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {vibeMode ? 'Deactivate Vibe Mode' : 'Activate Vibe Mode'}
               </span>
             </button>
-            <button className="p-1 rounded-md text-cco-neutral-700 hover:bg-cco-neutral-100 relative">
+            {/* Notification Bell */}
+            <Link href="/notifications" className="p-1 rounded-md text-cco-neutral-700 hover:bg-cco-neutral-100 relative group">
               <BellIcon className="w-6 h-6" />
-              <span className="absolute top-0 right-0 block w-2 h-2 bg-cco-accent-500 rounded-full"></span>
-            </button>
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-cco-accent-500 text-white text-xs font-medium rounded-full min-w-5 h-5 px-1.5">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+              <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 w-max px-2 py-1 bg-cco-neutral-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Notifications
+              </span>
+            </Link>
             <button className="p-1 rounded-md text-cco-neutral-700 hover:bg-cco-neutral-100">
               <UserIcon className="w-6 h-6" />
             </button>
