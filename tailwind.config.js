@@ -4,9 +4,20 @@ module.exports = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        'midnight-blue': '#121C42',
+        'electric-indigo': '#6016FC',
+        'cosmic-latte': '#FFF8E7',
+        'neon-teal': '#00F5D4',
+        'digital-lavender': '#D9C6F5',
+        'electric-crimson': '#FF003C',
+        'obsidian': '#1E1E2E',
+        'cosmic-grey': '#2A2A3A',
+        'stardust': '#8B8B9E',
+        'nebula-white': '#E9E9F0',
         'cco-primary': {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -46,6 +57,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter var', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
       },
       boxShadow: {
         'cco': '0 4px 14px 0 rgba(0, 118, 255, 0.39)',
