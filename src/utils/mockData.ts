@@ -302,13 +302,92 @@ export const meetingRecommendations: Recommendation[] = [
   },
 ];
 
-// Dashboard data
-export const dashboardData: Dashboard = {
+// Mock Notifications
+export const notifications = [
+  {
+    id: 'n1',
+    title: 'New Meeting Scheduled',
+    message: 'Technical review for E-Commerce Platform scheduled for March 10, 2023',
+    type: 'meeting' as const,
+    isRead: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+    link: '/meetings/m3',
+    relatedItemId: 'm3',
+    relatedItemType: 'meeting' as const,
+  },
+  {
+    id: 'n2',
+    title: 'Document Updated',
+    message: 'Jordan Smith updated "Technical Architecture Proposal"',
+    type: 'document' as const,
+    isRead: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+    link: '/documents/d2',
+    relatedItemId: 'd2',
+    relatedItemType: 'document' as const,
+  },
+  {
+    id: 'n3',
+    title: 'Action Item Reminder',
+    message: 'Due tomorrow: Create detailed project timeline',
+    type: 'action' as const,
+    isRead: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
+    link: '/action-items/a1',
+    relatedItemId: 'a1',
+    relatedItemType: 'action' as const,
+  },
+  {
+    id: 'n4',
+    title: 'Meeting Recording Available',
+    message: 'Recording for "E-Commerce Platform Initial Planning" is now available',
+    type: 'meeting' as const,
+    isRead: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), // 8 hours ago
+    link: '/meetings/m1',
+    relatedItemId: 'm1',
+    relatedItemType: 'meeting' as const,
+  },
+  {
+    id: 'n5',
+    title: 'New Project Created',
+    message: 'New project "Inventory Management API" has been created',
+    type: 'project' as const,
+    isRead: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+    link: '/projects/p3',
+    relatedItemId: 'p3',
+    relatedItemType: 'project' as const,
+  },
+  {
+    id: 'n6',
+    title: 'System Update',
+    message: 'VibeCoder has been updated with new AI features',
+    type: 'system' as const,
+    isRead: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
+  },
+  {
+    id: 'n7',
+    title: 'Document Generated',
+    message: 'New document "E-Commerce Platform Code Scaffold" has been generated',
+    type: 'document' as const,
+    isRead: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), // 36 hours ago
+    link: '/documents/d3',
+    relatedItemId: 'd3',
+    relatedItemType: 'document' as const,
+  },
+];
+
+// Update dashboardData to include notifications
+export const dashboardData = {
   recentMeetings: [recentMeeting],
   upcomingMeetings: [upcomingMeeting],
   activeProjects: [ecommerceProject, previousProjects[1]],
   recentDocuments: recentMeetingDocs,
   pendingActionItems: recentMeeting.actionItems || [],
+  notifications: notifications,
 };
 
 // Integration workflows
