@@ -4,6 +4,18 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 
+// Import components
+import {
+  ProgressSteps,
+  IntroductionStep,
+  DataSourcesStep,
+  CustomizeStep,
+  ConfirmationStep,
+  VoiceInteractionStep,
+  DataSource,
+  Preferences
+} from './components';
+
 const OnboardingPage: FC = () => {
   const router = useRouter();
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
@@ -11,6 +23,13 @@ const OnboardingPage: FC = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const [userProject, setUserProject] = useState<string>('');
+  const [preferences, setPreferences] = useState<Preferences>({
+    notificationFrequency: 'daily',
+    dataPrivacy: 'private',
+    aiSuggestions: true,
+  });
+  const totalSteps = 5; // Updated total steps to include voice interaction
 
   // Check system preference and user data on load
   useEffect(() => {
@@ -49,7 +68,11 @@ const OnboardingPage: FC = () => {
   };
 
   const handleContinue = () => {
-    setCurrentStep(2);
+    setCurrentStep(prevStep => Math.min(prevStep + 1, totalSteps));
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prevStep => Math.max(prevStep - 1, 1));
   };
 
   const handleSourceConnect = () => {
@@ -57,10 +80,23 @@ const OnboardingPage: FC = () => {
     
     // Simulate API call for connecting data sources
     setTimeout(() => {
-      // Update user data with selected sources (for demo purposes)
+      // Move to the next step (customize)
+      setIsProcessing(false);
+      handleContinue();
+    }, 2000);
+  };
+
+  const handleFinish = () => {
+    setIsProcessing(true);
+    
+    // Simulate API call for completing setup
+    setTimeout(() => {
+      // Update user data with selected sources and preferences
       const updatedUserData = {
         ...userData,
         dataSources: selectedSources,
+        preferences: preferences,
+        userProject: userProject,
         onboardingComplete: true
       };
       
@@ -68,15 +104,23 @@ const OnboardingPage: FC = () => {
       
       // Simulate completion
       setIsProcessing(false);
-      router.push('/dashboard'); // Redirect to dashboard (would need to be created)
+      router.push('/dashboard'); // Redirect to dashboard
     }, 2000);
   };
 
   const handleSkip = () => {
+    // If on the voice interaction step, just move to the introduction step
+    if (currentStep === 1) {
+      handleContinue();
+      return;
+    }
+    
     // Create empty second brain without data sources
     const updatedUserData = {
       ...userData,
       dataSources: [],
+      preferences: preferences,
+      userProject: userProject,
       onboardingComplete: true
     };
     
@@ -84,7 +128,10 @@ const OnboardingPage: FC = () => {
     router.push('/dashboard'); // Redirect to dashboard
   };
 
-  const dataSources = [
+  // Step label names updated to include voice interaction
+  const stepLabels = ['Voice', 'Introduction', 'Data Sources', 'Customize', 'Finish'];
+  
+  const dataSources: DataSource[] = [
     {
       id: 'linkedin',
       name: 'LinkedIn',
@@ -194,7 +241,23 @@ const OnboardingPage: FC = () => {
 
       <main className="flex-1 py-12 px-6">
         <div className="max-w-4xl mx-auto">
+          <ProgressSteps 
+            currentStep={currentStep} 
+            totalSteps={totalSteps} 
+            stepLabels={stepLabels}
+          />
+          
+          {/* Step Title */}
           {currentStep === 1 ? (
+            <div className="text-center mb-12">
+              <h1 className="text-3xl md:text-4xl font-bold text-midnight-blue dark:text-cosmic-latte mb-4">
+                Let's Start the Conversation
+              </h1>
+              <p className="text-xl text-cosmic-grey dark:text-stardust max-w-2xl mx-auto">
+                Tell me about your first project to help me understand your needs better.
+              </p>
+            </div>
+          ) : currentStep === 2 ? (
             <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold text-midnight-blue dark:text-cosmic-latte mb-4">
                 Create Your Second Brain
@@ -203,7 +266,7 @@ const OnboardingPage: FC = () => {
                 Import your data from various platforms to build a personalized knowledge base that will power your CCO experience.
               </p>
             </div>
-          ) : (
+          ) : currentStep === 3 ? (
             <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold text-midnight-blue dark:text-cosmic-latte mb-4">
                 Connect Your Data Sources
@@ -212,178 +275,71 @@ const OnboardingPage: FC = () => {
                 Select the platforms you'd like to connect to build your second brain knowledge base.
               </p>
             </div>
-          )}
-          
-          {currentStep === 1 ? (
-            <div className="bg-nebula-white dark:bg-cosmic-grey dark:bg-opacity-20 rounded-xl p-8 md:p-12 shadow-lg">
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="w-full md:w-1/2">
-                  <h2 className="text-2xl font-semibold text-midnight-blue dark:text-cosmic-latte mb-4">
-                    What is a Second Brain?
-                  </h2>
-                  <p className="text-cosmic-grey dark:text-stardust mb-4">
-                    Your second brain is a personal knowledge base that stores and organizes information from various sources, creating a searchable repository of your professional knowledge and expertise.
-                  </p>
-                  <p className="text-cosmic-grey dark:text-stardust mb-6">
-                    By importing data from platforms like LinkedIn, GitHub, Dropbox, and more, CCO can build a comprehensive profile of your skills, experiences, and work to assist you during meetings and help potential clients discover you.
-                  </p>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-electric-indigo">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-midnight-blue dark:text-cosmic-latte">Personalized Meeting Assistance</h3>
-                        <p className="text-sm text-cosmic-grey dark:text-stardust">Get real-time guidance based on your expertise</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start space-x-3">
-                      <div className="text-electric-indigo">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-midnight-blue dark:text-cosmic-latte">Tailored PRD Generation</h3>
-                        <p className="text-sm text-cosmic-grey dark:text-stardust">Documents created with your unique perspective</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start space-x-3">
-                      <div className="text-electric-indigo">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-midnight-blue dark:text-cosmic-latte">Client Matching</h3>
-                        <p className="text-sm text-cosmic-grey dark:text-stardust">Clients can "interview" your CCO to assess fit</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="w-full md:w-1/2">
-                  <div className="bg-white dark:bg-obsidian p-6 rounded-lg border border-cosmic-grey dark:border-stardust border-opacity-20 dark:border-opacity-20">
-                    <h3 className="text-xl font-medium text-midnight-blue dark:text-cosmic-latte mb-4">Getting Started</h3>
-                    
-                    <div className="space-y-4 mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-electric-indigo bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center text-electric-indigo">
-                          1
-                        </div>
-                        <p className="text-cosmic-grey dark:text-stardust">Select data sources to import</p>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-electric-indigo bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center text-electric-indigo">
-                          2
-                        </div>
-                        <p className="text-cosmic-grey dark:text-stardust">Authenticate with each platform</p>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-electric-indigo bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center text-electric-indigo">
-                          3
-                        </div>
-                        <p className="text-cosmic-grey dark:text-stardust">CCO will analyze and organize your data</p>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-electric-indigo bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center text-electric-indigo">
-                          4
-                        </div>
-                        <p className="text-cosmic-grey dark:text-stardust">Your second brain is ready to use</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col space-y-3">
-                      <button
-                        onClick={handleContinue}
-                        className="w-full bg-electric-indigo hover:bg-opacity-90 text-nebula-white text-center px-4 py-3 rounded-md font-medium transition-all"
-                      >
-                        Connect Data Sources
-                      </button>
-                      
-                      <button
-                        onClick={handleSkip}
-                        className="w-full border border-cosmic-grey dark:border-stardust border-opacity-30 dark:border-opacity-30 text-cosmic-grey dark:text-stardust hover:text-electric-indigo dark:hover:text-electric-indigo hover:border-electric-indigo dark:hover:border-electric-indigo text-center px-4 py-3 rounded-md font-medium transition-all"
-                      >
-                        Skip & Create Empty Second Brain
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          ) : currentStep === 4 ? (
+            <div className="text-center mb-12">
+              <h1 className="text-3xl md:text-4xl font-bold text-midnight-blue dark:text-cosmic-latte mb-4">
+                Customize Your Experience
+              </h1>
+              <p className="text-xl text-cosmic-grey dark:text-stardust max-w-2xl mx-auto">
+                Set your preferences for how your Second Brain will work for you.
+              </p>
             </div>
           ) : (
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dataSources.map((source) => (
-                  <div 
-                    key={source.id}
-                    onClick={() => toggleSource(source.id)}
-                    className={`p-6 rounded-lg border transition-all cursor-pointer flex items-center space-x-4 ${
-                      selectedSources.includes(source.id)
-                        ? 'border-electric-indigo bg-electric-indigo bg-opacity-5 dark:bg-opacity-10'
-                        : 'border-cosmic-grey dark:border-stardust border-opacity-20 dark:border-opacity-20 hover:border-electric-indigo'
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      {source.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-midnight-blue dark:text-cosmic-latte">{source.name}</h3>
-                      <p className="text-sm text-cosmic-grey dark:text-stardust">{source.description}</p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        selectedSources.includes(source.id)
-                          ? 'bg-electric-indigo text-nebula-white'
-                          : 'border border-cosmic-grey dark:border-stardust border-opacity-50 dark:border-opacity-50'
-                      }`}>
-                        {selectedSources.includes(source.id) && (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex flex-col-reverse md:flex-row gap-4 justify-end pt-6">
-                <button
-                  onClick={handleSkip}
-                  className="px-6 py-3 text-cosmic-grey dark:text-stardust hover:text-electric-indigo dark:hover:text-electric-indigo transition-colors"
-                >
-                  Skip for now
-                </button>
-                
-                <button
-                  onClick={handleSourceConnect}
-                  disabled={isProcessing || selectedSources.length === 0}
-                  className={`bg-electric-indigo hover:bg-opacity-90 text-nebula-white px-8 py-3 rounded-md font-medium transition-all ${
-                    (isProcessing || selectedSources.length === 0) ? 'opacity-60 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isProcessing ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Connecting...
-                    </span>
-                  ) : 'Connect Selected Sources'}
-                </button>
-              </div>
+            <div className="text-center mb-12">
+              <h1 className="text-3xl md:text-4xl font-bold text-midnight-blue dark:text-cosmic-latte mb-4">
+                Ready to Launch Your Second Brain
+              </h1>
+              <p className="text-xl text-cosmic-grey dark:text-stardust max-w-2xl mx-auto">
+                Review your selections and complete the setup process.
+              </p>
             </div>
+          )}
+          
+          {/* Step Content */}
+          {currentStep === 1 ? (
+            <VoiceInteractionStep 
+              onContinue={() => {
+                // Store what the user said and continue
+                const transcript = document.querySelector('.whitespace-pre-wrap')?.textContent || '';
+                if (transcript && transcript !== 'Click "Start Recording" to tell me about your first project.') {
+                  setUserProject(transcript);
+                }
+                handleContinue();
+              }} 
+              onSkip={handleSkip} 
+            />
+          ) : currentStep === 2 ? (
+            <IntroductionStep 
+              onContinue={handleContinue} 
+              onSkip={handleSkip} 
+            />
+          ) : currentStep === 3 ? (
+            <DataSourcesStep 
+              dataSources={dataSources}
+              selectedSources={selectedSources}
+              toggleSource={toggleSource}
+              onContinue={handleSourceConnect}
+              onBack={handleBack}
+              onSkip={handleSkip}
+              isProcessing={isProcessing}
+            />
+          ) : currentStep === 4 ? (
+            <CustomizeStep 
+              preferences={preferences}
+              setPreferences={setPreferences}
+              onContinue={handleContinue}
+              onBack={handleBack}
+            />
+          ) : (
+            <ConfirmationStep 
+              selectedSources={selectedSources}
+              dataSources={dataSources}
+              preferences={preferences}
+              userProject={userProject}
+              onFinish={handleFinish}
+              onBack={handleBack}
+              isProcessing={isProcessing}
+            />
           )}
         </div>
       </main>

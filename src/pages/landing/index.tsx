@@ -52,8 +52,6 @@ const LandingPage: FC = () => {
         <title>CCO - Chief Cognitive Officer</title>
         <meta name="description" content="AI-powered productivity platform for vibe coders - eliminating administrative overhead and enhancing developer flow" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.min.css" />
       </Head>
       
       {/* Theme toggle button */}
