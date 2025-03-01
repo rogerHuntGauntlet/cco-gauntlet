@@ -632,7 +632,7 @@ Please generate the code for the main interface components.`;
                   className="px-3"
                   onClick={(e) => handleAIAssist(project, e)}
                   title="AI Assistant"
-                  ref={el => buttonRefs.current[project.id] = el}
+                  ref={el => { buttonRefs.current[project.id] = el; }}
                 >
                   <SparklesIcon className="w-5 h-5" />
                 </Button>

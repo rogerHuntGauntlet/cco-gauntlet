@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import { DataIntegrationNodeEditor } from '../../../components/dashboard/DataIntegrationNodeEditor';
@@ -393,6 +393,7 @@ interface DragItem {
 
 // Add new component for draggable template card
 const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template, onSelect }) => {
+  const elementRef = useRef(null);
   const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
     type: 'template',
     item: { template },
@@ -401,9 +402,12 @@ const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template,
     })
   }));
 
+  // Connect the drag source to our ref
+  drag(elementRef);
+
   return (
     <motion.div
-      ref={drag}
+      ref={elementRef}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}

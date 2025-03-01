@@ -20,7 +20,7 @@ import { notifications } from '../../utils/mockData';
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const navigation: NavItem[] = [
