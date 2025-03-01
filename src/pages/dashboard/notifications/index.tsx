@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import { NotificationsList } from '../../components/notifications/NotificationsList';
-import { Notification } from '../../types';
-import { notifications as initialNotifications } from '../../utils/mockData';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import { NotificationsList } from '../../../components/notifications/NotificationsList';
+import { Notification } from '../../../types';
+import { notifications as initialNotifications } from '../../../utils/mockData';
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
