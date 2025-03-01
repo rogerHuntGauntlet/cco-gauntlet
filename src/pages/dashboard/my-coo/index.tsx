@@ -25,22 +25,15 @@ import {
   ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
   ArrowUpTrayIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  CloudArrowDownIcon,
-  CodeBracketIcon,
-  CircleStackIcon,
-  RectangleStackIcon,
-  CalendarIcon,
-  EnvelopeIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { IntegrationWorkflow, NodeType, IntegrationNode } from '../../../types';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DndProvider, useDrag, useDrop, DragSourceMonitor, DropTargetMonitor } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Template type with proper node structure
-interface IntegrationTemplate {
+type IntegrationTemplate = {
   id: string;
   name: string;
   description: string;
@@ -60,10 +53,10 @@ interface IntegrationTemplate {
       config: Record<string, unknown>;
     };
   }>;
-}
+};
 
 // Example templates with proper node structure
-const INTEGRATION_TEMPLATES: ReadonlyArray<IntegrationTemplate> = [
+const INTEGRATION_TEMPLATES: IntegrationTemplate[] = [
   {
     id: 'google-drive',
     name: 'Google Drive',
@@ -177,45 +170,91 @@ const INTEGRATION_TEMPLATES: ReadonlyArray<IntegrationTemplate> = [
     ]
   },
   {
-    id: 'templates',
-    name: 'Templates',
-    description: 'Upload and manage your document templates to ensure AI-generated content matches your preferred format and style.',
-    icon: <DocumentDuplicateIcon className="w-6 h-6" />,
-    category: 'Document Templates',
-    complexity: 'Simple',
-    estimatedTime: '2 min',
+    id: 'data-warehouse',
+    name: 'Data Warehouse ETL',
+    description: 'Extract, transform, and load data into your warehouse with scheduled runs.',
+    icon: <CloudArrowUpIcon className="w-6 h-6" />,
+    category: 'Data Integration',
+    complexity: 'Advanced',
+    estimatedTime: '20 min',
     nodes: [
       {
-        id: 'template-source',
-        serviceId: 'templates',
+        id: 'extract',
+        serviceId: 'extract',
         position: { x: 100, y: 100 },
         data: {
-          label: 'Template Library',
+          label: 'Extract',
           type: 'source',
-          icon: 'template',
+          icon: 'database',
           connected: false,
-          config: {
-            templates: [
-              { name: 'Project PRD', type: 'document' },
-              { name: 'Design Specs', type: 'document' },
-              { name: 'User Prefs', type: 'document' }
-            ]
-          }
+          config: {}
+        }
+      },
+      {
+        id: 'transform',
+        serviceId: 'transform',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'Transform',
+          type: 'transform',
+          icon: 'code',
+          connected: false,
+          config: {}
+        }
+      },
+      {
+        id: 'load',
+        serviceId: 'warehouse',
+        position: { x: 500, y: 100 },
+        data: {
+          label: 'Load',
+          type: 'destination',
+          icon: 'warehouse',
+          connected: false,
+          config: {}
+        }
+      }
+    ]
+  },
+  {
+    id: 'api-integration',
+    name: 'API Integration',
+    description: 'Connect and orchestrate multiple APIs with automatic retries and error handling.',
+    icon: <CubeTransparentIcon className="w-6 h-6" />,
+    category: 'API Management',
+    complexity: 'Simple',
+    estimatedTime: '5 min',
+    nodes: [
+      {
+        id: 'api1',
+        serviceId: 'api',
+        position: { x: 100, y: 100 },
+        data: {
+          label: 'API 1',
+          type: 'source',
+          icon: 'api',
+          connected: false,
+          config: {}
+        }
+      },
+      {
+        id: 'api2',
+        serviceId: 'api',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'API 2',
+          type: 'destination',
+          icon: 'api',
+          connected: false,
+          config: {}
         }
       }
     ]
   }
-];
+] as const;
 
 // Keyboard shortcuts configuration
-interface ShortcutConfig {
-  CREATE_WORKFLOW: string;
-  TOGGLE_TIPS: string;
-  FOCUS_SEARCH: string;
-  SAVE_WORKFLOW: string;
-}
-
-const SHORTCUTS: ShortcutConfig = {
+const SHORTCUTS = {
   CREATE_WORKFLOW: 'n',
   TOGGLE_TIPS: 't',
   FOCUS_SEARCH: '/',
@@ -231,7 +270,7 @@ type StrictIntegrationWorkflow = Omit<IntegrationWorkflow, 'status'> & {
 };
 
 // Empty template with proper node structure
-const EMPTY_TEMPLATE: Omit<IntegrationTemplate, 'nodes'> & { nodes: never[] } = {
+const EMPTY_TEMPLATE: IntegrationTemplate = {
   id: 'empty',
   name: 'Empty Workflow',
   description: 'Start from scratch',
@@ -354,7 +393,7 @@ interface DragItem {
 
 // Add new component for draggable template card
 const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template, onSelect }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const elementRef = useRef(null);
   const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
     type: 'template',
     item: { template },
@@ -363,22 +402,18 @@ const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template,
     })
   }));
 
-  // Connect the drag ref to our card ref
-  useEffect(() => {
-    if (cardRef.current) {
-      drag(cardRef.current);
-    }
-  }, [drag, cardRef]);
+  // Connect the drag source to our ref
+  drag(elementRef);
 
   return (
     <motion.div
-      ref={cardRef}
+      ref={elementRef}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`group cursor-pointer bg-white border border-cco-neutral-200 rounded-xl p-4 hover:shadow-md transition-all ${
+      className={`group cursor-pointer bg-white border border-cco-neutral-200 rounded-xl p-6 hover:shadow-md transition-all ${
         isDragging ? 'opacity-50' : ''
       }`}
       style={{
@@ -386,17 +421,62 @@ const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template,
       }}
       onClick={onSelect}
     >
-      <div className="flex items-center space-x-3">
-        <motion.div 
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-cco-primary-100 text-cco-primary-600"
-          whileHover={{ rotate: 360 }}
-          transition={{ duration: 0.5 }}
-        >
-          {template.icon}
-        </motion.div>
-        <h3 className="text-lg font-semibold text-cco-neutral-900 group-hover:text-cco-primary-600 transition-colors">
-          {template.name}
-        </h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <motion.div 
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-primary-100 text-cco-primary-600"
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.5 }}
+          >
+            {template.icon}
+          </motion.div>
+          <div>
+            <h3 className="text-lg font-semibold text-cco-neutral-900 group-hover:text-cco-primary-600 transition-colors">
+              {template.name}
+            </h3>
+            <span className="text-xs font-medium text-cco-neutral-500">
+              {template.category}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <p className="text-sm text-cco-neutral-600 mb-4">
+        {template.description}
+      </p>
+      
+      <div className="flex items-center justify-between text-xs">
+        <span className="px-2 py-1 rounded-full bg-cco-neutral-100 text-cco-neutral-700">
+          {template.complexity}
+        </span>
+        <span className="text-cco-neutral-500">
+          ⏱️ {template.estimatedTime}
+        </span>
+      </div>
+
+      {/* Node Preview */}
+      <div className="mt-4 pt-4 border-t border-cco-neutral-100">
+        <div className="flex items-center space-x-2">
+          {template.nodes.map((node, index) => (
+            <React.Fragment key={node.id}>
+              <motion.div 
+                className="px-2 py-1 rounded bg-cco-neutral-50 text-xs text-cco-neutral-700"
+                whileHover={{ scale: 1.1 }}
+              >
+                {node.data.label}
+              </motion.div>
+              {index < template.nodes.length - 1 && (
+                <motion.div 
+                  className="w-4 h-4 text-cco-neutral-400"
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  <ChevronRightIcon />
+                </motion.div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
@@ -578,586 +658,12 @@ const FileSyncView: React.FC<{ provider: 'google-drive' | 'dropbox' }> = ({ prov
   );
 };
 
-// Add data providers configuration
-const DATA_PROVIDERS = [
-  {
-    id: 'google-drive',
-    name: 'Google Drive',
-    description: 'Connect your Google Drive to sync documents, spreadsheets, and presentations.',
-    icon: <FolderIcon className="w-6 h-6" />,
-    category: 'Cloud Storage',
-    setupTime: '5 min',
-    popular: true
-  },
-  {
-    id: 'dropbox',
-    name: 'Dropbox',
-    description: 'Sync your Dropbox files and folders for seamless integration.',
-    icon: <CloudIcon className="w-6 h-6" />,
-    category: 'Cloud Storage',
-    setupTime: '5 min',
-    popular: true
-  },
-  {
-    id: 'onedrive',
-    name: 'OneDrive',
-    description: 'Connect Microsoft OneDrive to access your business documents.',
-    icon: <CloudArrowDownIcon className="w-6 h-6" />,
-    category: 'Cloud Storage',
-    setupTime: '5 min',
-    popular: false
-  },
-  {
-    id: 'github',
-    name: 'GitHub',
-    description: 'Import your repositories, issues, and documentation.',
-    icon: <CodeBracketIcon className="w-6 h-6" />,
-    category: 'Development',
-    setupTime: '8 min',
-    popular: true
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    description: 'Sync your Notion workspace, pages, and databases.',
-    icon: <RectangleStackIcon className="w-6 h-6" />,
-    category: 'Knowledge Base',
-    setupTime: '6 min',
-    popular: true
-  },
-  {
-    id: 'salesforce',
-    name: 'Salesforce',
-    description: 'Connect your CRM data, contacts, and opportunities.',
-    icon: <CircleStackIcon className="w-6 h-6" />,
-    category: 'Business',
-    setupTime: '10 min',
-    popular: false
-  },
-  {
-    id: 'outlook',
-    name: 'Outlook',
-    description: 'Sync your emails, calendar events, and contacts.',
-    icon: <EnvelopeIcon className="w-6 h-6" />,
-    category: 'Communication',
-    setupTime: '7 min',
-    popular: false
-  },
-  {
-    id: 'google-calendar',
-    name: 'Google Calendar',
-    description: 'Import your calendar events and meeting details.',
-    icon: <CalendarIcon className="w-6 h-6" />,
-    category: 'Calendar',
-    setupTime: '5 min',
-    popular: false
-  }
-] as const;
-
-// Add the DataProviderModal component
-const DataProviderModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (providerId: string) => void;
-}> = ({ isOpen, onClose, onSelect }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  const categories = Array.from(new Set(DATA_PROVIDERS.map(p => p.category)));
-  
-  const filteredProviders = DATA_PROVIDERS.filter(provider => {
-    const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         provider.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || provider.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
-      >
-        <div className="p-6 border-b border-cco-neutral-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-cco-neutral-900">Connect a Data Provider</h2>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-cco-neutral-100 rounded-full transition-colors"
-            >
-              <XMarkIcon className="w-6 h-6 text-cco-neutral-500" />
-            </button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search providers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-cco-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cco-primary-500"
-              />
-              <MagnifyingGlassIcon className="w-5 h-5 text-cco-neutral-400 absolute left-3 top-2.5" />
-            </div>
-            <select
-              value={selectedCategory || ''}
-              onChange={(e) => setSelectedCategory(e.target.value || null)}
-              className="px-4 py-2 border border-cco-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cco-primary-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        
-        <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
-          <div className="space-y-6">
-            {/* Popular Providers */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-cco-neutral-700">Popular Integrations</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {filteredProviders
-                  .filter(p => p.popular)
-                  .map(provider => (
-                    <motion.button
-                      key={provider.id}
-                      onClick={() => onSelect(provider.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex items-start p-4 border border-cco-neutral-200 rounded-xl hover:border-cco-primary-500 hover:bg-cco-primary-50 transition-all text-left"
-                    >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cco-neutral-100 flex items-center justify-center mr-4">
-                        {provider.icon}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-cco-neutral-900">{provider.name}</h4>
-                        <p className="text-sm text-cco-neutral-600 mt-1">{provider.description}</p>
-                        <p className="text-xs text-cco-neutral-500 mt-2">Setup time: {provider.setupTime}</p>
-                      </div>
-                    </motion.button>
-                  ))}
-              </div>
-            </div>
-
-            {/* Other Providers */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-cco-neutral-700">All Integrations</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {filteredProviders
-                  .filter(p => !p.popular)
-                  .map(provider => (
-                    <motion.button
-                      key={provider.id}
-                      onClick={() => onSelect(provider.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex items-start p-4 border border-cco-neutral-200 rounded-xl hover:border-cco-primary-500 hover:bg-cco-primary-50 transition-all text-left"
-                    >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cco-neutral-100 flex items-center justify-center mr-4">
-                        {provider.icon}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-cco-neutral-900">{provider.name}</h4>
-                        <p className="text-sm text-cco-neutral-600 mt-1">{provider.description}</p>
-                        <p className="text-xs text-cco-neutral-500 mt-2">Setup time: {provider.setupTime}</p>
-                      </div>
-                    </motion.button>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// Node types and interfaces
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Node {
-  id: string;
-  type: 'cco' | 'service';
-  label: string;
-  position: Position;
-  serviceType?: string;
-  icon?: JSX.Element;
-}
-
-interface Connection {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  style: 'solid' | 'dashed';
-}
-
-// Grid settings
-const GRID_SIZE = 20;
-const snapToGrid = (position: Position): Position => ({
-  x: Math.round(position.x / GRID_SIZE) * GRID_SIZE,
-  y: Math.round(position.y / GRID_SIZE) * GRID_SIZE
-});
-
-// Connection context menu
-const ConnectionContextMenu: React.FC<{
-  position: Position;
-  onToggleStyle: () => void;
-  onClose: () => void;
-}> = ({ position, onToggleStyle, onClose }) => {
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('.connection-menu')) {
-        onClose();
-      }
-    };
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
-  }, [onClose]);
-
-  return (
-    <div 
-      className="connection-menu absolute bg-white rounded-lg shadow-lg py-1 z-50"
-      style={{ left: position.x, top: position.y }}
-    >
-      <button
-        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
-        onClick={onToggleStyle}
-      >
-        Toggle Line Style
-      </button>
-    </div>
-  );
-};
-
-// Node Canvas Component
-const NodeCanvas: React.FC = () => {
-  const [nodes, setNodes] = useState<Node[]>([
-    {
-      id: 'cco',
-      type: 'cco',
-      label: 'Chief Cognitive Officer',
-      position: { x: 400, y: 100 }
-    },
-    {
-      id: 'google-drive',
-      type: 'service',
-      label: 'Google Drive',
-      position: { x: 200, y: 200 },
-      serviceType: 'Google Drive',
-      icon: <FolderIcon className="w-5 h-5" />
-    },
-    {
-      id: 'dropbox',
-      type: 'service',
-      label: 'Dropbox',
-      position: { x: 300, y: 300 },
-      serviceType: 'Dropbox',
-      icon: <CloudIcon className="w-5 h-5" />
-    },
-    {
-      id: 'templates',
-      type: 'service',
-      label: 'Templates',
-      position: { x: 600, y: 200 },
-      serviceType: 'Templates',
-      icon: <DocumentDuplicateIcon className="w-5 h-5" />
-    }
-  ]);
-  
-  const [connections, setConnections] = useState<Connection[]>([
-    {
-      id: 'conn-google-drive',
-      sourceId: 'google-drive',
-      targetId: 'cco',
-      style: 'solid'
-    },
-    {
-      id: 'conn-dropbox',
-      sourceId: 'dropbox',
-      targetId: 'cco',
-      style: 'solid'
-    },
-    {
-      id: 'conn-templates',
-      sourceId: 'templates',
-      targetId: 'cco',
-      style: 'solid'
-    }
-  ]);
-  
-  const [contextMenu, setContextMenu] = useState<{ position: Position; connectionId: string } | null>(null);
-  
-  const addServiceNode = (serviceType: string, icon: JSX.Element) => {
-    const newNode: Node = {
-      id: `service-${Date.now()}`,
-      type: 'service',
-      label: serviceType,
-      position: { x: 200, y: 200 },
-      serviceType,
-      icon
-    };
-    
-    const newConnection: Connection = {
-      id: `conn-${Date.now()}`,
-      sourceId: newNode.id,
-      targetId: 'cco',
-      style: 'solid'
-    };
-    
-    setNodes([...nodes, newNode]);
-    setConnections([...connections, newConnection]);
-  };
-
-  const handleNodeDrag = (nodeId: string, newPosition: Position) => {
-    const snappedPosition = snapToGrid(newPosition);
-    setNodes(nodes.map(node => 
-      node.id === nodeId ? { ...node, position: snappedPosition } : node
-    ));
-  };
-
-  const handleConnectionContextMenu = (e: React.MouseEvent, connectionId: string) => {
-    e.preventDefault();
-    setContextMenu({
-      position: { x: e.clientX, y: e.clientY },
-      connectionId
-    });
-  };
-
-  const toggleConnectionStyle = (connectionId: string) => {
-    setConnections(connections.map(conn =>
-      conn.id === connectionId
-        ? { ...conn, style: conn.style === 'solid' ? 'dashed' : 'solid' }
-        : conn
-    ));
-    setContextMenu(null);
-  };
-
-  return (
-    <div className="relative w-full h-[500px] bg-gray-50 rounded-lg border border-gray-200">
-      {/* Grid Background */}
-      <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-        <defs>
-          <pattern id="grid" width={GRID_SIZE} height={GRID_SIZE} patternUnits="userSpaceOnUse">
-            <path 
-              d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`} 
-              fill="none" 
-              stroke="rgba(0,0,0,0.1)" 
-              strokeWidth="0.5"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
-
-      {/* Connections */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        <defs>
-          <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#818cf8" stopOpacity="0.2" />
-            <stop offset="50%" stopColor="#818cf8" stopOpacity="1" />
-            <stop offset="100%" stopColor="#818cf8" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
-        {connections.map(connection => {
-          const sourceNode = nodes.find(n => n.id === connection.sourceId);
-          const targetNode = nodes.find(n => n.id === connection.targetId);
-          if (!sourceNode || !targetNode) return null;
-
-          const sourcePos = sourceNode.position;
-          const targetPos = targetNode.position;
-
-          return (
-            <g key={connection.id} style={{ pointerEvents: 'all' }} onClick={(e) => handleConnectionContextMenu(e, connection.id)}>
-              {/* Static base line */}
-              <line
-                x1={sourcePos.x + 75}
-                y1={sourcePos.y + 30}
-                x2={targetPos.x + 75}
-                y2={targetPos.y + 30}
-                stroke="#818cf8"
-                strokeOpacity="0.2"
-                strokeWidth="2"
-                strokeDasharray={connection.style === 'dashed' ? '5,5' : undefined}
-                className="cursor-pointer"
-              />
-              {/* Animated flow line */}
-              <line
-                x1={sourcePos.x + 75}
-                y1={sourcePos.y + 30}
-                x2={targetPos.x + 75}
-                y2={targetPos.y + 30}
-                stroke="url(#line-gradient)"
-                strokeWidth="2"
-                strokeDasharray={connection.style === 'dashed' ? '5,5' : '8,8'}
-                className="cursor-pointer"
-                style={{
-                  animation: 'flowAnimation 2s linear infinite'
-                }}
-              />
-            </g>
-          );
-        })}
-      </svg>
-
-      <style jsx>{`
-        @keyframes flowAnimation {
-          0% {
-            stroke-dashoffset: 16;
-          }
-          100% {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}</style>
-
-      {/* Nodes */}
-      {nodes.map(node => (
-        <div
-          key={node.id}
-          className={`absolute cursor-move rounded-xl transition-all duration-200 ${
-            node.type === 'cco' 
-              ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 shadow-xl ring-2 ring-purple-500/30 backdrop-blur-sm animate-pulse-subtle' 
-              : 'bg-gradient-to-b from-white to-gray-50 p-4 border border-gray-200/50 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-100/20 group'
-          }`}
-          style={{
-            width: node.type === 'cco' ? 180 : 150,
-            left: node.position.x,
-            top: node.position.y,
-            transform: 'translate(0, 0)',
-            ...(node.type === 'cco' ? {
-              boxShadow: '0 0 20px rgba(129, 140, 248, 0.3)',
-              animation: 'float 3s ease-in-out infinite'
-            } : {
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s ease-in-out'
-            })
-          }}
-          onMouseDown={(e) => {
-            const startX = e.clientX - node.position.x;
-            const startY = e.clientY - node.position.y;
-
-            const handleMouseMove = (e: MouseEvent) => {
-              handleNodeDrag(node.id, {
-                x: e.clientX - startX,
-                y: e.clientY - startY
-              });
-            };
-
-            const handleMouseUp = () => {
-              window.removeEventListener('mousemove', handleMouseMove);
-              window.removeEventListener('mouseup', handleMouseUp);
-            };
-
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-          }}
-        >
-          {node.type === 'cco' ? (
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative flex items-center space-x-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm">
-                  <SparklesIcon className="w-6 h-6 text-white animate-pulse" />
-                </div>
-                <div>
-                  <div className="font-semibold text-base">{node.label}</div>
-                  <div className="text-xs text-white/80 mt-1">AI-Powered Assistant</div>
-                </div>
-              </div>
-              <div className="absolute -inset-px bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg blur-sm"></div>
-            </div>
-          ) : (
-            <div className="relative">
-              <div className="flex items-center space-x-3">
-                {node.icon && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-gray-50 to-white shadow-sm border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    {node.type === 'service' && node.serviceType === 'Google Drive' ? (
-                      <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" 
-                        alt="Google Drive"
-                        className="w-5 h-5"
-                      />
-                    ) : node.type === 'service' && node.serviceType === 'Dropbox' ? (
-                      <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/7/78/Dropbox_Icon.svg" 
-                        alt="Dropbox"
-                        className="w-5 h-5"
-                      />
-                    ) : (
-                      <div className="w-5 h-5 text-gray-600 group-hover:text-indigo-600 transition-colors duration-200">
-                        {node.icon}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div>
-                  <div className="font-medium text-sm text-gray-900 group-hover:text-indigo-700 transition-colors duration-200">{node.label}</div>
-                  <div className="text-xs text-gray-500 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Connected Service</div>
-                </div>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-indigo-50/0 to-indigo-100/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none"></div>
-            </div>
-          )}
-        </div>
-      ))}
-
-      <style jsx>{`
-        @keyframes flowAnimation {
-          0% {
-            stroke-dashoffset: 16;
-          }
-          100% {
-            stroke-dashoffset: 0;
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-        
-        @keyframes pulse-subtle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.8;
-          }
-        }
-      `}</style>
-
-      {/* Context Menu */}
-      {contextMenu && (
-        <ConnectionContextMenu
-          position={contextMenu.position}
-          onToggleStyle={() => toggleConnectionStyle(contextMenu.connectionId)}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
-    </div>
-  );
-};
-
 export default function MyCOOPage() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<IntegrationWorkflow | null>(null);
   const [mode, setMode] = useState<'list' | 'edit'>('list');
   const [showKeyboardTips, setShowKeyboardTips] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<IntegrationTemplate | null>(null);
   const [draggedTemplate, setDraggedTemplate] = useState(null);
-  const [showProviderModal, setShowProviderModal] = useState(false);
   
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -1181,19 +687,6 @@ export default function MyCOOPage() {
     setSelectedTemplate(null);
     setSelectedWorkflow(null);
     setMode('list');
-  };
-
-  const handleEmptyTemplateClick = () => {
-    setShowProviderModal(true);
-  };
-
-  const handleProviderSelect = (providerId: string) => {
-    const template = INTEGRATION_TEMPLATES.find((t: IntegrationTemplate) => t.id === providerId);
-    if (template) {
-      setSelectedTemplate(template);
-      setMode('edit');
-    }
-    setShowProviderModal(false);
   };
 
   return (
@@ -1245,7 +738,7 @@ export default function MyCOOPage() {
               animate={{ y: 0 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="max-w-3xl">
+                <div>
                   <h1 className="text-2xl font-bold text-cco-neutral-900">
                     {!selectedTemplate ? (
                       "Add Files to Chief Cognitive Officer"
@@ -1256,9 +749,12 @@ export default function MyCOOPage() {
                   <div className="mt-2 space-y-2">
                     {!selectedTemplate ? (
                       <>
+                        <p className="text-cco-neutral-700">
+                          Connect your third-party data providers to enhance your CCO's cognitive capabilities.
+                        </p>
                         <p className="text-sm text-cco-neutral-600">
                           Your data will be securely processed and integrated into your second brain, providing valuable insights during meetings, 
-                          enriching project context, and helping you make more informed decisions.
+                          enriching project context, and helping you make more informed decisions. Choose from our pre-built templates or create a custom connection.
                         </p>
                       </>
                     ) : (
@@ -1268,8 +764,8 @@ export default function MyCOOPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0">
-                  {selectedTemplate ? (
+                <div className="flex items-center space-x-3">
+                  {selectedTemplate && (
                     <motion.button 
                       onClick={handleBackToList}
                       whileHover={{ scale: 1.05 }}
@@ -1278,17 +774,14 @@ export default function MyCOOPage() {
                     >
                       Back to Templates
                     </motion.button>
-                  ) : (
-                    <motion.button
-                      onClick={handleEmptyTemplateClick}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                    >
-                      <PlusIcon className="w-5 h-5 mr-2" />
-                      Add Data
-                    </motion.button>
                   )}
+                  <button
+                    onClick={() => setShowKeyboardTips(prev => !prev)}
+                    className="p-2 text-cco-neutral-600 hover:text-cco-neutral-900 hover:bg-cco-neutral-100 rounded-md transition-colors"
+                    title="Show Keyboard Shortcuts"
+                  >
+                    <CommandLineIcon className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -1297,73 +790,46 @@ export default function MyCOOPage() {
             <div className="bg-white rounded-xl p-6">
               {!selectedTemplate ? (
                 <div className="space-y-6">
-                  {/* Connected Data Section */}
-                  <div>
-                    <div className="flex items-center space-x-4 mb-4">
-                      <h2 className="text-base font-semibold text-cco-neutral-900">Connected Data</h2>
-                      <div className="flex items-center space-x-3">
-                        {/* Google Drive - Icon Only */}
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="h-8 w-8 flex items-center justify-center bg-white border border-cco-neutral-200 rounded-lg hover:shadow-sm transition-all"
-                          onClick={() => {
-                            const template = INTEGRATION_TEMPLATES.find(t => t.id === 'google-drive');
-                            if (template) {
-                              setSelectedTemplate(template);
-                              setMode('edit');
-                            }
-                          }}
-                        >
-                          <img 
-                            src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" 
-                            alt="Google Drive"
-                            className="w-4 h-4"
-                          />
-                        </motion.button>
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    layout
+                  >
+                    {/* Empty Template Card */}
+                    <motion.div 
+                      onClick={() => {
+                        setSelectedTemplate(EMPTY_TEMPLATE);
+                        setMode('edit');
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group cursor-pointer bg-white border-2 border-dashed border-cco-neutral-200 rounded-xl p-6 hover:border-cco-primary-500 hover:bg-cco-primary-50 transition-all"
+                    >
+                      <motion.div 
+                        className="flex items-center justify-center w-12 h-12 rounded-full bg-cco-neutral-100 group-hover:bg-white mb-4"
+                        whileHover={{ rotate: 180 }}
+                      >
+                        <PlusIcon className="w-6 h-6 text-cco-neutral-600 group-hover:text-cco-primary-600" />
+                      </motion.div>
+                      <h3 className="text-lg font-semibold text-cco-neutral-900 mb-2">Connect a Data Provider</h3>
+                      <p className="text-sm text-cco-neutral-600">
+                        Set up a custom connection to your preferred data storage service or API.
+                      </p>
+                    </motion.div>
 
-                        {/* Dropbox - Icon Only */}
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="h-8 w-8 flex items-center justify-center bg-white border border-cco-neutral-200 rounded-lg hover:shadow-sm transition-all"
-                          onClick={() => {
-                            const template = INTEGRATION_TEMPLATES.find(t => t.id === 'dropbox');
-                            if (template) {
-                              setSelectedTemplate(template);
-                              setMode('edit');
-                            }
+                    {/* Template Cards */}
+                    <AnimatePresence>
+                      {INTEGRATION_TEMPLATES.map((template) => (
+                        <DraggableTemplateCard
+                          key={template.id}
+                          template={template}
+                          onSelect={() => {
+                            setSelectedTemplate(template);
+                            setMode('edit');
                           }}
-                        >
-                          <img 
-                            src="https://upload.wikimedia.org/wikipedia/commons/7/78/Dropbox_Icon.svg" 
-                            alt="Dropbox"
-                            className="w-4 h-4"
-                          />
-                        </motion.button>
-
-                        {/* Templates - Compact Button */}
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="h-8 flex items-center space-x-2 px-3 bg-white border border-cco-neutral-200 rounded-lg hover:shadow-sm transition-all"
-                          onClick={() => {
-                            const template = INTEGRATION_TEMPLATES.find(t => t.id === 'templates');
-                            if (template) {
-                              setSelectedTemplate(template);
-                              setMode('edit');
-                            }
-                          }}
-                        >
-                          <DocumentDuplicateIcon className="w-4 h-4 text-cco-neutral-600" />
-                          <span className="text-sm text-cco-neutral-900">Templates</span>
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Node Canvas */}
-                  <NodeCanvas />
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
                 </div>
               ) : (
                 <motion.div 
@@ -1383,17 +849,6 @@ export default function MyCOOPage() {
                 </motion.div>
               )}
             </div>
-
-            {/* Add the modal */}
-            <AnimatePresence>
-              {showProviderModal && (
-                <DataProviderModal
-                  isOpen={showProviderModal}
-                  onClose={() => setShowProviderModal(false)}
-                  onSelect={handleProviderSelect}
-                />
-              )}
-            </AnimatePresence>
           </motion.div>
         </DndProvider>
       </DashboardLayout>
