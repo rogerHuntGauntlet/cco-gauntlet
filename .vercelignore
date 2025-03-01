@@ -1,0 +1,8 @@
+# Ignore Supabase functions - these run on Supabase, not Vercel
+supabase/functions/
+
+# Other files to ignore
+README.md
+.git/
+.github/
+.vscode/ 

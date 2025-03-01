@@ -43,6 +43,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^8.43.0",
     "eslint-config-next": "13.4.4",
+    "ignore-loader": "^0.1.2",
     "node-fetch": "^2.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^4.9.5"
