@@ -39,7 +39,7 @@ export function Dashboard({ data }: DashboardProps) {
           </div>
           <p className="text-cco-primary-100 mb-4 text-lg">
             Your meeting with Jordan Smith about the E-Commerce Platform has been analyzed. 
-            We've prepared some resources based on the discussion.
+            We&apos;ve prepared some resources based on the discussion.
           </p>
           <div className="flex flex-wrap gap-3 mt-6">
             <Button 

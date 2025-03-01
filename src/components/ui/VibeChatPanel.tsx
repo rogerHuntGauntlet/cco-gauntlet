@@ -20,7 +20,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
     {
       id: '1',
       sender: 'vibe',
-      text: 'Hi there! I\'m your VIBE assistant. How can I enhance your flow state today?',
+      text: 'Hi there! I&apos;m your VIBE assistant. How can I enhance your flow state today?',
       timestamp: new Date()
     }
   ]);
@@ -114,7 +114,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
     
     // Define models to try in order of preference
     const modelsToTry = [
-      // Only try Titan since we don't have access to Claude models
+      // Only try Titan since we&apos;re not have access to Claude models
       BEDROCK_MODELS.TITAN_TEXT
     ];
     
@@ -184,7 +184,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
           // If this is Claude 3.7 Sonnet and we have an inference profile error
           if (modelId === BEDROCK_MODELS.CLAUDE_SONNET_3_7 && 
               (response.error.includes('inference profile') || 
-               response.error.includes('on-demand throughput isn\'t supported'))) {
+               response.error.includes('on-demand throughput isn&apos;t supported'))) {
             
             console.log('Claude 3.7 Sonnet requires an inference profile, trying other models...');
             inferenceProfileError = true;
@@ -199,7 +199,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
               msg.id === responseId 
                 ? { 
                     ...msg, 
-                    text: response.result || "I couldn't generate a response. Please try again.", 
+                    text: response.result || "I couldn&apos;t generate a response. Please try again.", 
                     isLoading: false 
                   }
                 : msg
@@ -217,7 +217,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
     
     // If all models failed, provide a more intelligent fallback response
     if (!succeeded) {
-      // Create more contextual fallback responses based on keywords in the user's message
+      // Create more contextual fallback responses based on keywords in the user&apos;s message
       let responseText = "";
       const inputLower = inputValue.toLowerCase();
       
@@ -225,7 +225,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
         responseText = "To minimize distractions and improve focus, I recommend the following: (1) Use dedicated focus apps that block distracting websites and notifications, (2) Implement the '2-minute rule' - if a task takes less than 2 minutes, do it immediately rather than letting it distract you later, (3) Create a physical environment that signals 'focus time' to your brain, and (4) Practice mindful transitions between tasks to maintain your focus momentum.";
       } 
       else if (inputLower.includes("flow") || inputLower.includes("zone")) {
-        responseText = "Flow state occurs when you're completely immersed in an activity that balances challenge and skill. To enter flow more reliably: (1) Eliminate external interruptions by silencing notifications and creating a dedicated workspace, (2) Set clear, challenging but achievable goals for each session, (3) Establish a pre-flow ritual that signals to your brain it's time to focus deeply, and (4) Match your most challenging work to your peak energy periods during the day.";
+        responseText = "Flow state occurs when you&apos;re completely immersed in an activity that balances challenge and skill. To enter flow more reliably: (1) Eliminate external interruptions by silencing notifications and creating a dedicated workspace, (2) Set clear, challenging but achievable goals for each session, (3) Establish a pre-flow ritual that signals to your brain it&apos;s time to focus deeply, and (4) Match your most challenging work to your peak energy periods during the day.";
       }
       else if (inputLower.includes("procrastinat") || inputLower.includes("stuck") || inputLower.includes("motiv")) {
         responseText = "To overcome procrastination and boost motivation: (1) Break down intimidating tasks into smaller, more manageable steps, (2) Use time-blocking to dedicate specific periods to challenging work, (3) Implement the '5-minute rule' by committing to just start working for 5 minutes, which often leads to continued progress, and (4) Create accountability systems through deadlines, commitment devices, or work partners.";
@@ -239,7 +239,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
       else {
         // Generic responses for other topics
         const fallbackResponses = [
-          "To enhance your flow state, I recommend establishing a consistent environment that triggers your focus. This includes having a dedicated workspace, familiar tools, and sensory cues (like specific music or ambient sounds) that signal to your brain it's time for deep work.",
+          "To enhance your flow state, I recommend establishing a consistent environment that triggers your focus. This includes having a dedicated workspace, familiar tools, and sensory cues (like specific music or ambient sounds) that signal to your brain it&apos;s time for deep work.",
           "One effective technique for maintaining flow is the Pomodoro method with personalized timing. While traditional Pomodoros are 25 minutes, flow research suggests that your optimal deep work interval may be longer - between 50-90 minutes for most people. Experiment to find your ideal cycle.",
           "Preparation is crucial for achieving flow. Before starting your work sessions, take 10 minutes to clear potential distractions: silence notifications, prepare needed resources, set clear mini-goals for the session, and briefly review what you accomplished previously to provide mental continuity.",
           "The transition between tasks is where flow is often lost. I recommend creating a brief transition ritual between different types of work that includes: noting where you left off, identifying what you accomplished, clearing your workspace (physically or digitally), and setting an intention for the next task.",
@@ -254,7 +254,7 @@ export default function VibeChatPanel({ isOpen, onClose }: VibeChatPanelProps) {
           msg.id === responseId 
             ? { 
                 ...msg, 
-                text: responseText + "\n\n(Note: This response is provided by the system's built-in knowledge base rather than a live AI model.)", 
+                text: responseText + "\n\n(Note: This response is provided by the system&apos;s built-in knowledge base rather than a live AI model.)", 
                 isLoading: false 
               }
             : msg

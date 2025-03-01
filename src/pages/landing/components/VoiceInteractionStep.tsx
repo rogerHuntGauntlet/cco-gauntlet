@@ -150,11 +150,11 @@ const VoiceInteractionStep: FC<VoiceInteractionStepProps> = ({ onContinue, onSki
         </div>
         
         <h2 className="text-2xl font-semibold text-midnight-blue dark:text-cosmic-latte mb-2">
-          Let's Get To Know You
+          Let&apos;s Get To Know You
         </h2>
         
         <p className="text-cosmic-grey dark:text-stardust mb-6">
-          Before creating your Second Brain, I'd like to understand what you're working on.
+          Before creating your Second Brain, I&apos;d like to understand what you&apos;re working on.
         </p>
         
         {/* Hidden audio element for playing TTS */}

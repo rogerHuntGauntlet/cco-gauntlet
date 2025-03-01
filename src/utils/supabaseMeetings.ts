@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import supabase from './supabaseClient';
 
 export interface Meeting {
   id?: string;
@@ -202,7 +202,7 @@ export const completeActionItem = async (actionItemId: string) => {
   return await updateActionItem(actionItemId, { status: 'completed' });
 };
 
-export default {
+const supabaseMeetingsApi = {
   getUserMeetings,
   getProjectMeetings,
   getMeeting,
@@ -216,4 +216,6 @@ export default {
   createActionItem,
   updateActionItem,
   completeActionItem
-}; 
+};
+
+export default supabaseMeetingsApi; 

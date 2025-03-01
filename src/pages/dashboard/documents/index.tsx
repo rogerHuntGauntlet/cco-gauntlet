@@ -357,7 +357,7 @@ const DocumentsPage: React.FC = () => {
                   <p className="text-sm text-cco-neutral-600 text-center max-w-md mb-4">
                     {searchQuery ? 
                       `No documents match your search for "${searchQuery}".` : 
-                      "You don't have any documents yet. Upload or create a new document to get started."}
+                      "You don&apos;t have any documents yet. Upload or create a new document to get started."}
                   </p>
                   <div className="flex space-x-3">
                     <Button

@@ -253,7 +253,7 @@ const MeetingsPage: React.FC = () => {
                 <CalendarIcon className="w-12 h-12 text-cco-neutral-400 mb-4" />
                 <h3 className="font-medium text-cco-neutral-700 mb-2">No upcoming meetings</h3>
                 <p className="text-sm text-cco-neutral-600 text-center max-w-md mb-4">
-                  You don't have any scheduled meetings. Create a new meeting or connect your calendar to import existing ones.
+                  You don&apos;t have any scheduled meetings. Create a new meeting or connect your calendar to import existing ones.
                 </p>
                 <Button
                   variant="default"
@@ -287,7 +287,7 @@ const MeetingsPage: React.FC = () => {
                 <DocumentTextIcon className="w-12 h-12 text-cco-neutral-400 mb-4" />
                 <h3 className="font-medium text-cco-neutral-700 mb-2">No past meetings</h3>
                 <p className="text-sm text-cco-neutral-600 text-center max-w-md">
-                  You don't have any past meetings. Once you've had meetings, they'll appear here.
+                  You don&apos;t have any past meetings. Once you&apos;ve had meetings, they&apos;ll appear here.
                 </p>
               </div>
             </Card>

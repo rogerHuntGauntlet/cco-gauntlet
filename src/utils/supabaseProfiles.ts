@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import supabase from './supabaseClient';
 
 // Define types for profile data
 export interface UserProfile {
@@ -115,11 +115,13 @@ export const deleteProfile = async (userId: string) => {
   return { error };
 };
 
-export default {
+const supabaseProfilesApi = {
   getProfile,
   upsertProfile,
   updateProfile,
   updatePreferences,
   uploadAvatar,
   deleteProfile
-}; 
+};
+
+export default supabaseProfilesApi; 

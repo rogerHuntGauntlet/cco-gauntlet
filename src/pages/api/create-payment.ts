@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key from environment variables
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_secret_key', {
-  apiVersion: '2025-02-24.acacia', // Use the latest API version
+  apiVersion: '2024-12-18.acacia', // Use a supported API version
 });
 
 type ResponseData = {

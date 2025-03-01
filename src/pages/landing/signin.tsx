@@ -144,12 +144,12 @@ const SignInPage: FC = () => {
                         Check Auth Status
                       </button>
                       
-                      <a 
+                      <Link 
                         href="/dashboard?debugBypass=true" 
                         className="text-sm text-center px-3 py-1 text-electric-indigo border border-electric-indigo rounded hover:bg-electric-indigo hover:bg-opacity-10 transition-colors"
                       >
                         Bypass Login (Dev Only)
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -363,7 +363,7 @@ const SignInPage: FC = () => {
               
               <div className="text-center mt-6">
                 <p className="text-cosmic-grey dark:text-stardust">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     href="/landing/register"
                     className="text-electric-indigo hover:underline"

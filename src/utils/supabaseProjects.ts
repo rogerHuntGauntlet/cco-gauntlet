@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import supabase from './supabaseClient';
 
 export interface Project {
   id?: string;
@@ -138,7 +138,7 @@ export const removeProjectMember = async (projectId: string, userId: string) => 
   return { error };
 };
 
-export default {
+const supabaseProjectsApi = {
   getUserProjects,
   getProject,
   createProject,
@@ -148,4 +148,6 @@ export default {
   addProjectMember,
   updateProjectMemberRole,
   removeProjectMember
-}; 
+};
+
+export default supabaseProjectsApi; 

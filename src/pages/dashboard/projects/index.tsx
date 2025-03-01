@@ -445,7 +445,7 @@ Please generate the code for the main interface components.`;
           // We've tried all handlers or one was successful
           if (!handlerSuccess) {
             // None worked, offer to download Cursor
-            if (confirm('Cursor app doesn\'t seem to be installed or couldn\'t be launched. Would you like to download Cursor?')) {
+            if (confirm('Cursor app doesn&apos;t seem to be installed or couldn&apos;t be launched. Would you like to download Cursor?')) {
               window.open('https://cursor.sh/download', '_blank', 'noopener,noreferrer');
             }
           }
@@ -464,7 +464,7 @@ Please generate the code for the main interface components.`;
           // Protocol failed, try the next one
           document.body.removeChild(iframe);
           tryNextHandler();
-        }, 500); // Shorter timeout since we're trying multiple options
+        }, 500); // Shorter timeout since we&apos;re trying multiple options
         
         // Listen for successful protocol launch
         iframe.onload = () => {
@@ -869,7 +869,7 @@ Please generate the code for the main interface components.`;
             </div>
             
             <p className="text-cco-neutral-600 mb-4">
-              Due to browser security restrictions, we can't directly open the Cursor desktop app for you.
+              Due to browser security restrictions, we can&apos;t directly open the Cursor desktop app for you.
               Please follow these steps:
             </p>
             
@@ -924,7 +924,7 @@ Please generate the code for the main interface components.`;
                       onClick={() => {
                         const runCmd = `powershell -Command "Start-Process -FilePath 'C:\\Users\\${navigator.userAgent.split('NT ')[1]?.split(';')[0] || 'CURRENT_USER'}\\AppData\\Local\\Programs\\Cursor\\Cursor.exe'"`;
                         console.log("Would execute:", runCmd);
-                        alert("Due to browser security restrictions, we can't run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
+                        alert("Due to browser security restrictions, we can&apos;t run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
                       }}
                     >
                       %LOCALAPPDATA%\Programs\Cursor\Cursor.exe
@@ -932,7 +932,7 @@ Please generate the code for the main interface components.`;
                     <button 
                       className="text-blue-800 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded text-xs font-mono transition-colors text-left"
                       onClick={() => {
-                        alert("Due to browser security restrictions, we can't run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
+                        alert("Due to browser security restrictions, we can&apos;t run this command directly. Please manually open Cursor from your Start menu or desktop shortcut.");
                       }}
                     >
                       %PROGRAMFILES%\Cursor\Cursor.exe
@@ -941,7 +941,7 @@ Please generate the code for the main interface components.`;
                 </div>
                 
                 <p className="text-xs text-blue-600 mt-2">
-                  Note: These methods may not work due to browser security restrictions, but they're worth a try!
+                  Note: These methods may not work due to browser security restrictions, but they&apos;re worth a try!
                 </p>
               </div>
             )}
@@ -1034,7 +1034,7 @@ Please generate the code for the main interface components.`;
                     <p className="text-cco-neutral-600 mb-6 max-w-md">
                       {searchQuery || Object.values(filters).some(f => f.length > 0) 
                         ? "No projects match your current filters. Try adjusting your search criteria or clearing your filters."
-                        : "You don't have any projects yet. Create a new project to get started."}
+                        : "You don&apos;t have any projects yet. Create a new project to get started."}
                     </p>
                     <div className="flex space-x-4">
                       {(searchQuery || Object.values(filters).some(f => f.length > 0)) && (

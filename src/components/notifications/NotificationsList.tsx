@@ -155,7 +155,7 @@ export function NotificationsList({
                 <div className="flex justify-center mb-2">
                   <BellIcon className="w-8 h-8 text-cco-neutral-400" />
                 </div>
-                <p className="text-cco-neutral-600">You don't have any notifications</p>
+                <p className="text-cco-neutral-600">You don&apos;t have any notifications</p>
               </>
             )}
           </div>
