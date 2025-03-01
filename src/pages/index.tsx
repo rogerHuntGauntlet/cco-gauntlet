@@ -6,8 +6,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to dashboard
-    router.push('/');
+    // Redirect to signin page since user is not authenticated
+    router.push('/landing/signin');
   }, [router]);
 
   return (
@@ -26,7 +26,7 @@ export default function Home() {
           CCO VibeCoder Platform
         </h1>
         <p className="text-lg text-cco-neutral-600 mb-8">
-          Redirecting to dashboard...
+          Redirecting to signin page...
         </p>
         <div className="w-8 h-8 border-4 border-cco-primary-600 border-t-transparent rounded-full animate-spin"></div>
       </main>
