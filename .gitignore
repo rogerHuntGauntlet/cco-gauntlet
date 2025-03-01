@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts 
+
+# OAuth and API credentials
+client_secret*.json
+*googleusercontent*.json
+*oauth*.json
+credentials.json
+token.json 
