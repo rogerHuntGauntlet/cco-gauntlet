@@ -1,97 +1,72 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import supabase from '../../utils/supabaseClient';
-
 /**
- * API endpoint for receiving data from external services
- * 
- * This endpoint allows external services to send data to our application.
- * Authentication is required via API key in the request headers.
- * 
- * @param req The Next.js API request
- * @param res The Next.js API response
+ * API route for receiving external data
+ * This replaces the Supabase Edge Function
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+type ResponseData = {
+  success: boolean;
+  message: string;
+  data?: any;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseData>
+) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
-      message: 'Method not allowed. Only POST requests are supported.'
+      message: 'Method not allowed' 
     });
   }
 
   try {
-    // Validate API key from headers
-    const apiKey = req.headers['x-api-key'] as string;
+    // Validate API key
+    const apiKey = req.headers['x-api-key'];
+    const validApiKey = process.env.EXTERNAL_SERVICE_API_KEY;
     
-    // TODO: Replace with your actual API key validation logic
-    if (!apiKey || apiKey !== process.env.EXTERNAL_SERVICE_API_KEY) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized. Invalid or missing API key.'
+    if (!apiKey || apiKey !== validApiKey) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid or missing API key' 
       });
     }
 
-    // Get the data from the request body
+    // Get request body
     const data = req.body;
     
-    // Basic validation
+    // Validate data
     if (!data || Object.keys(data).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Bad request. Request body is empty or invalid.'
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No data provided' 
       });
     }
 
-    // Validate source is provided
-    if (!data.source) {
-      return res.status(400).json({
-        success: false,
-        message: 'Bad request. Source field is required.'
-      });
-    }
-
-    // Log the received data (for debugging purposes)
-    console.log(`Received data from external service: ${data.source}`, data);
-
-    // Store the data in Supabase external_data table
-    const { data: insertedData, error } = await supabase
-      .from('external_data')
-      .insert([
-        {
-          source: data.source,
-          data: data, // Store the entire payload in the data JSONB field
-          received_at: new Date().toISOString(),
-          status: 'pending',
-          metadata: {
-            ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-            user_agent: req.headers['user-agent'],
-            content_type: req.headers['content-type']
-          }
-        }
-      ]);
-
-    if (error) {
-      console.error('Error storing data in Supabase:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to store data',
-        error: error.message
-      });
-    }
-
-    // Return success response
+    // Process and store data
+    // This is where you would replace Supabase storage with your preferred database
+    console.log('Received external data:', data);
+    
+    // For demonstration, just echo the data back
+    // In a real implementation, you would store this in your database
     return res.status(200).json({
       success: true,
-      message: 'Data received and stored successfully',
-      timestamp: new Date().toISOString()
+      message: 'Data received successfully',
+      data: {
+        id: `data_${Date.now()}`,
+        received_at: new Date().toISOString(),
+        ...data
+      }
     });
     
-  } catch (err) {
-    console.error('Unexpected error processing external data:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: err instanceof Error ? err.message : String(err)
+  } catch (error) {
+    console.error('Error processing external data:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
     });
   }
 } 

@@ -1,0 +1,12 @@
+specVersion: "v1beta"
+serviceId: "CCO"
+location: "us-south1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "cco-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]

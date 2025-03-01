@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signIn, signInWithProvider } from '../../utils/supabaseClient';
 import supabase from '../../utils/supabaseClient';
 import dynamic from 'next/dynamic';
+import { initializeAuthenticationBypass, checkAuthBypassStatus } from '../../utils/debug';
 
 // Import AuthStatusIndicator with no SSR to prevent server rendering issues
 const AuthStatusIndicator = dynamic(
@@ -111,60 +112,97 @@ const SocialLoginButtons: FC = () => {
   );
 };
 
-// HARDCODED USER AUTHENTICATION
-// This component now sets a hardcoded user and redirects to dashboard
+// DEVELOPMENT DEBUG AUTHENTICATION BYPASS
+// This approach uses a robust debug utility to bypass auth
 const SignInPage: FC = () => {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [bypassDetails, setBypassDetails] = useState<any>(null);
   
   useEffect(() => {
-    // Hardcode the specific user data
-    const setHardcodedUser = async () => {
+    const initializeBypass = async () => {
       try {
-        console.log('Setting hardcoded user data');
+        console.log('🔐 Starting development authentication bypass process...');
         
-        // Store the user data in localStorage to simulate an authenticated session
-        localStorage.setItem('supabase.auth.token', JSON.stringify({
-          currentSession: {
-            access_token: 'hardcoded_access_token',
-            refresh_token: 'hardcoded_refresh_token',
-            user: {
-              id: 'a12fdb05-d08e-4fb4-b0fc-a29d123e08b4',
-              email: 'data@ideatrek.io',
-              created_at: '2025-01-13T10:16:00.000Z',
-              updated_at: '2025-01-28T12:17:00.000Z',
-              confirmed_at: '2025-01-13T10:16:00.000Z',
-              last_sign_in_at: '2025-01-28T12:17:00.000Z',
-              role: 'authenticated',
-              app_metadata: {
-                provider: 'email'
-              },
-              user_metadata: {}
-            }
-          },
-          expiresAt: Date.now() + 3600000 // 1 hour from now
-        }));
+        // Initialize the authentication bypass
+        const result = await initializeAuthenticationBypass();
         
-        // Set a cookie as well to help with auth state
-        document.cookie = `sb-access-token=hardcoded_access_token; path=/; max-age=3600`;
-        document.cookie = `sb-refresh-token=hardcoded_refresh_token; path=/; max-age=3600`;
-        
-        // Now redirect to dashboard
-        console.log('Hardcoded user set - redirecting to dashboard');
-        router.replace('/dashboard');
-      } catch (error) {
-        console.error('Error setting hardcoded user:', error);
+        if (result.success) {
+          console.log('✅ Authentication bypass initialized successfully');
+          
+          // Verify it worked by checking auth status
+          const statusCheck = await checkAuthBypassStatus();
+          setBypassDetails(statusCheck);
+          
+          if (statusCheck.success) {
+            console.log('✅ Auth bypass verification successful');
+            
+            // Add a slight delay to ensure everything is set
+            setTimeout(() => {
+              console.log('🚀 Redirecting to dashboard with debug flag...');
+              router.replace('/dashboard?debugBypass=true');
+            }, 1000);
+          } else {
+            console.error('❌ Auth bypass verification failed');
+            setError('Authentication bypass setup successful but verification failed. Check console for details.');
+            setIsLoading(false);
+          }
+        } else {
+          console.error('❌ Failed to initialize authentication bypass:', result.error);
+          setError(`Failed to initialize authentication bypass: ${result.error}`);
+          setIsLoading(false);
+        }
+      } catch (e) {
+        console.error('❌ Fatal error in authentication bypass:', e);
+        setError(`Fatal error: ${e instanceof Error ? e.message : String(e)}`);
+        setIsLoading(false);
       }
     };
     
-    setHardcodedUser();
+    initializeBypass();
   }, [router]);
   
-  // Return a minimal loading indicator while redirecting
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-midnight-blue p-4">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold mb-4 text-midnight-blue dark:text-cosmic-latte">Authentication Bypass Error</h1>
+          <p className="text-cosmic-grey dark:text-stardust mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-electric-indigo text-white rounded-md hover:bg-electric-indigo-dark"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-midnight-blue">
       <div className="text-center">
         <div className="animate-spin h-10 w-10 border-4 border-electric-indigo border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-lg">Setting hardcoded user and redirecting to dashboard...</p>
+        <p className="text-lg">Development Authentication Bypass in Progress</p>
+        <p className="text-sm text-gray-500 mt-2">Setting up debug session...</p>
+        
+        {bypassDetails && (
+          <div className="mt-4 text-xs text-gray-400">
+            <p>Session active: {bypassDetails.bypassActive ? 'Yes' : 'No'}</p>
+            {bypassDetails.sessionInfo && (
+              <>
+                <p>User: {bypassDetails.sessionInfo.email}</p>
+                <p>Expires: {bypassDetails.sessionInfo.expires}</p>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
