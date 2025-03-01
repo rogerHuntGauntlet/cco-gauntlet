@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { signIn, signInWithProvider } from '../../utils/supabaseClient';
+import supabase from '../../utils/supabaseClient';
 import dynamic from 'next/dynamic';
 
 // Import AuthStatusIndicator with no SSR to prevent server rendering issues
@@ -390,15 +391,38 @@ const SignInPage: FC = () => {
         console.log('Credentials prepared, calling signIn function...');
         const { data, error } = await signIn(formData.email, formData.password);
         
+        // IMPORTANT: Check if we have a session, even if there was an error
+        // This handles cases where Supabase returns errors but the user is actually authenticated
+        if (data?.session || (data as any)?.user) {
+          console.log('Sign-in successful (data is present), preparing redirect...');
+          // Always redirect to dashboard after successful login
+          console.log('Redirecting to dashboard...');
+          router.push('/dashboard');
+          return;
+        }
+        
         if (error) {
           console.error('Supabase auth error:', error);
           // Log more details about the error
           console.error('Error details:', JSON.stringify(error, null, 2));
           
+          // Before showing error, double-check if we're actually logged in despite the error
+          try {
+            const sessionCheck = await supabase.auth.getSession();
+            if (sessionCheck.data?.session) {
+              console.log('Session exists despite error - proceeding with login');
+              router.push('/dashboard');
+              return;
+            }
+          } catch (sessionError) {
+            console.error('Session check failed:', sessionError);
+          }
+          
           // Show a more helpful error message with debug bypass option for backend errors
           const isBackendError = error.status === 500 || 
                                 error.message?.includes('unavailable') ||
-                                error.message?.includes('Authentication service');
+                                error.message?.includes('Authentication service') ||
+                                error.message?.includes('Database error');
           
           setErrors(prev => ({ 
             ...prev, 
@@ -452,13 +476,26 @@ const SignInPage: FC = () => {
           return;
         }
         
-        if (data?.user) {
+        if (data) {
           console.log('Sign-in successful, preparing redirect...');
           // Always redirect to dashboard after successful login
           console.log('Redirecting to dashboard...');
           router.push('/dashboard');
         } else {
-          console.error('No user data returned but no error either, unusual state');
+          console.error('No user data returned but no error either, checking session directly');
+          
+          // Last-attempt check to see if we're logged in anyway
+          try {
+            const sessionCheck = await supabase.auth.getSession();
+            if (sessionCheck.data?.session) {
+              console.log('Found valid session - proceeding with login despite missing user data');
+              router.push('/dashboard');
+              return;
+            }
+          } catch (sessionError) {
+            console.error('Final session check failed:', sessionError);
+          }
+          
           setErrors(prev => ({ ...prev, general: 'An unexpected error occurred' }));
           setIsSubmitting(false);
         }
