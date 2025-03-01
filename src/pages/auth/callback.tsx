@@ -7,24 +7,53 @@ import Head from 'next/head';
 export default function AuthCallback() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('Initializing authentication...');
 
   useEffect(() => {
     // Process the OAuth callback
     const handleAuthCallback = async () => {
       try {
         console.log('Processing auth callback');
+        setProcessingStatus('Processing authentication callback...');
+        
+        // Debug cookie state on entry
+        console.log('Cookie state on callback entry:', document.cookie);
         
         // Get the hash from the URL if it exists
         const hashParams = window.location.hash;
         if (hashParams) {
-          console.log('Hash params found in URL, parsing...');
+          console.log('Hash params found in URL');
+        }
+        
+        // Clear any previously stored auth data to avoid conflicts
+        try {
+          localStorage.removeItem('supabase.auth.token');
+          sessionStorage.removeItem('supabase.auth.token');
+          
+          // Clear auth cookies
+          const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+          authCookies.forEach(cookieName => {
+            document.cookie = `${cookieName}=; max-age=0; path=/;`;
+          });
+        } catch (clearError) {
+          console.warn('Error clearing previous auth data:', clearError);
         }
         
         // First try to exchange the auth code for a session
-        // This is important as some OAuth providers return via hash fragment
-        await supabase.auth.getSession();
+        setProcessingStatus('Establishing session...');
+        console.log('Attempting to establish session with Supabase');
+        
+        // This will process the OAuth token or code from the URL
+        // The URL is automatically processed by Supabase's auth handlers
+        const { error: setupError } = await supabase.auth.getSession();
+        
+        if (setupError) {
+          console.error('Error in initial session setup:', setupError);
+          throw new Error(`Session setup failed: ${setupError.message}`);
+        }
         
         // Get the auth confirmation from Supabase
+        setProcessingStatus('Retrieving your user profile...');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -51,25 +80,61 @@ export default function AuthCallback() {
         }
         
         if (data.session) {
-          console.log('Session obtained successfully, redirecting to dashboard...');
+          console.log('Session obtained successfully');
+          
+          // Debug current cookie state
+          console.log('Cookie state after session retrieval:', document.cookie);
           
           // Ensure cookies are properly set
           try {
-            // Force a session refresh to ensure all cookies are properly set
-            await supabase.auth.refreshSession();
+            setProcessingStatus('Finalizing your session...');
+            console.log('Refreshing session to ensure cookies are set...');
             
-            // Successfully signed in, redirect to dashboard
-            router.push('/dashboard');
+            // Apply session to local storage as a backup mechanism
+            try {
+              localStorage.setItem('sb-auth-token', data.session.access_token);
+            } catch (storageError) {
+              console.warn('Could not store token in localStorage:', storageError);
+            }
+            
+            // Force a session refresh to ensure all cookies are properly set
+            const refreshResult = await supabase.auth.refreshSession();
+            
+            if (refreshResult.error) {
+              console.warn('Session refresh warning:', refreshResult.error.message);
+              // Continue anyway since we have a session
+            } else {
+              console.log('Session refresh successful');
+            }
+            
+            // Debug cookie state after refresh
+            console.log('Cookie state after refresh:', document.cookie);
+            
+            // Set a success status
+            setProcessingStatus('Authentication successful! Redirecting to dashboard...');
+            
+            // Add a short delay before redirect to ensure cookies are saved
+            setTimeout(() => {
+              // Successfully signed in, redirect to dashboard
+              router.push('/dashboard');
+            }, 1000);
           } catch (refreshError) {
             console.error('Error refreshing session:', refreshError);
             
-            // Try direct navigation as a fallback
-            window.location.href = '/dashboard';
+            // If refresh fails, attempt direct navigation as fallback
+            setProcessingStatus('Redirecting you to the dashboard...');
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
           }
         } else {
           console.warn('No session returned from Supabase, redirecting to signin...');
+          setError('Unable to complete authentication. No session was created.');
+          
           // No session, redirect back to sign in
-          router.push('/landing/signin?error=nosession');
+          setTimeout(() => {
+            router.push('/landing/signin?error=nosession');
+          }, 3000);
         }
       } catch (err) {
         console.error('Exception in auth callback:', err);
@@ -105,7 +170,8 @@ export default function AuthCallback() {
         ) : (
           <>
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-electric-indigo"></div>
-            <p className="mt-4 text-xl text-gray-600 dark:text-gray-300">Completing authentication...</p>
+            <p className="mt-4 text-xl text-gray-600 dark:text-gray-300">{processingStatus}</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Please do not close this window</p>
           </>
         )}
       </div>

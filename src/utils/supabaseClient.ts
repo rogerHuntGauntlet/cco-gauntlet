@@ -66,12 +66,16 @@ if (typeof window !== 'undefined') {
       cookieOptions: { 
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        path: '/'
+        path: '/',
+        // Make sure domain isn't set to allow cookies on localhost
+        domain: process.env.NODE_ENV === 'production' ? undefined : ''
       },
-      // Fix for some browsers blocking third-party cookies
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      }
     }
   );
 } else {
@@ -97,7 +101,13 @@ export const signIn = async (email: string, password: string) => {
       const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
       authCookies.forEach(cookieName => {
         document.cookie = `${cookieName}=; max-age=0; path=/; domain=${window.location.hostname}`;
+        // Also try without domain for localhost
+        document.cookie = `${cookieName}=; max-age=0; path=/;`;
       });
+      
+      // Force storage cleanup
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('supabase.auth.token');
     }
   } catch (e) {
     console.warn('Could not clear existing auth cookies:', e);
@@ -122,6 +132,7 @@ export const signIn = async (email: string, password: string) => {
       });
       
       // Actual auth request
+      console.log('Starting authentication request...');
       const authPromise = supabase.auth.signInWithPassword({ email, password })
         .then(result => {
           clearTimeout(timeoutId);
@@ -136,12 +147,29 @@ export const signIn = async (email: string, password: string) => {
         console.log('Authentication successful, session established');
         
         // Force a refresh of the session to ensure cookies are set properly
-        await supabase.auth.refreshSession();
+        try {
+          console.log('Refreshing session to ensure cookies are set...');
+          const refreshResult = await supabase.auth.refreshSession();
+          if (refreshResult.error) {
+            console.warn('Session refresh warning:', refreshResult.error.message);
+          } else {
+            console.log('Session refresh successful');
+          }
+        } catch (refreshError) {
+          console.warn('Session refresh error:', refreshError);
+        }
+        
+        // Debug cookie state
+        if (typeof window !== 'undefined') {
+          console.log('Cookie state after login:', document.cookie);
+        }
         
         return { data, error: null };
       }
       
       if (error) {
+        console.error('Auth error response:', error);
+        
         // Check if this is a server error that warrants a retry
         if (error.status && error.status >= 500 && attempt < MAX_RETRIES) {
           console.warn(`Server error (${error.status}), will retry...`);

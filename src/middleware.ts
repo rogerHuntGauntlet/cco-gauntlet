@@ -17,6 +17,8 @@ export async function middleware(req: NextRequest) {
     // Add debug headers if in development
     if (process.env.NODE_ENV === 'development') {
       res.headers.set('X-Auth-Debug', 'Middleware-Active');
+      // Log all cookies for debugging
+      console.log('[Auth Middleware] Cookies:', req.cookies.getAll());
     }
     
     // Get Supabase environment variables
@@ -46,6 +48,9 @@ export async function middleware(req: NextRequest) {
           get: (name) => {
             try {
               const cookie = req.cookies.get(name);
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[Auth Middleware] Reading cookie ${name}:`, cookie?.value ? 'present' : 'not found');
+              }
               return cookie?.value;
             } catch (e) {
               console.error('[Auth Middleware] Error reading cookie:', e);
@@ -54,19 +59,63 @@ export async function middleware(req: NextRequest) {
           },
           set: (name, value, options) => {
             try {
-              res.cookies.set({ name, value, ...options });
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[Auth Middleware] Setting cookie ${name}`, options);
+              }
+              
+              // Ensure path is set
+              const cookieOptions = {
+                ...options,
+                path: options?.path || '/'
+              };
+              
+              // Don't set domain for localhost to avoid cookie issues
+              if (req.headers.get('host')?.includes('localhost') && cookieOptions.domain) {
+                delete cookieOptions.domain;
+              }
+              
+              res.cookies.set({
+                name,
+                value,
+                ...cookieOptions
+              });
             } catch (e) {
               console.error('[Auth Middleware] Error setting cookie:', e);
             }
           },
           remove: (name, options) => {
             try {
-              res.cookies.set({ name, value: '', ...options });
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[Auth Middleware] Removing cookie ${name}`);
+              }
+              
+              // Ensure path is set
+              const cookieOptions = {
+                ...options,
+                path: options?.path || '/'
+              };
+              
+              // Don't set domain for localhost to avoid cookie issues
+              if (req.headers.get('host')?.includes('localhost') && cookieOptions.domain) {
+                delete cookieOptions.domain;
+              }
+              
+              res.cookies.set({
+                name,
+                value: '',
+                ...cookieOptions,
+                maxAge: 0
+              });
             } catch (e) {
               console.error('[Auth Middleware] Error removing cookie:', e);
             }
           },
         },
+        cookieOptions: {
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        }
       }
     )
     
@@ -81,6 +130,11 @@ export async function middleware(req: NextRequest) {
         sessionError = error;
       } else {
         session = data.session;
+        if (process.env.NODE_ENV === 'development' && session) {
+          console.log('[Auth Middleware] Session found, user:', session.user.email);
+        } else if (process.env.NODE_ENV === 'development') {
+          console.log('[Auth Middleware] No session found');
+        }
       }
     } catch (sessionError) {
       console.error('[Auth Middleware] Failed to get session:', 
@@ -90,6 +144,7 @@ export async function middleware(req: NextRequest) {
     // Add additional debug headers in development
     if (process.env.NODE_ENV === 'development') {
       res.headers.set('X-Auth-Status', session ? 'Authenticated' : 'Unauthenticated');
+      res.headers.set('X-Auth-Cookie-Count', String(req.cookies.getAll().length));
       if (sessionError) {
         res.headers.set('X-Auth-Error', 'Session-Error');
       }
@@ -168,5 +223,7 @@ export const config = {
     '/landing/signin',
     '/landing/register',
     '/landing/onboarding',
+    // Add callback route to be processed by middleware
+    '/auth/callback',
   ],
 } 

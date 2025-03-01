@@ -189,6 +189,9 @@ const SignInPage: FC = () => {
       setShowDiagnostics(true);
       setIsSubmitting(false);
       
+      // Check if there are cookie issues
+      const hasCookieIssues = !data.client.cookies.present || !data.client.cookies.authCookiesFound;
+      
       // If there are recommendations, show them as part of the error message
       if (data.recommendations && data.recommendations.length > 0) {
         setErrors(prev => ({
@@ -198,9 +201,19 @@ const SignInPage: FC = () => {
               <div className="font-medium mb-1">Authentication Diagnostic Results:</div>
               <div className="mb-3">
                 {data.infrastructure.auth.operational ? 
-                  'Auth service is operational, but there may be configuration issues.' : 
+                  'Auth service is operational, but there might be configuration or browser issues.' : 
                   'Auth service is not responding correctly.'}
               </div>
+              
+              {hasCookieIssues && (
+                <div className="p-3 mb-3 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 rounded border border-yellow-300 dark:border-yellow-700">
+                  <div className="font-medium text-yellow-800 dark:text-yellow-300">Cookie Issue Detected</div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                    Your browser is {!data.client.cookies.present ? 'not sending any cookies' : 'missing authentication cookies'}.
+                    This is the most common cause of authentication problems.
+                  </p>
+                </div>
+              )}
               
               <div className="font-medium">Recommendations:</div>
               <ul className="list-disc pl-5 space-y-1 mb-3">
@@ -209,10 +222,34 @@ const SignInPage: FC = () => {
                 ))}
               </ul>
               
+              {hasCookieIssues && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={testCookies}
+                    className="px-3 py-1 bg-electric-indigo text-white text-sm rounded hover:bg-opacity-90"
+                  >
+                    Test Cookie Storage
+                  </button>
+                </div>
+              )}
+              
               {process.env.NODE_ENV === 'development' && (
-                <div className="text-xs text-gray-500 mt-2">
-                  Environment: {data.environment.nodeEnv}, 
-                  DB Connected: {data.infrastructure.database.connected ? 'Yes' : 'No'}
+                <div className="text-xs mt-4 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                  <div>Environment: {data.environment.nodeEnv}</div>
+                  <div>DB Connected: {data.infrastructure.database.connected ? 'Yes' : 'No'}</div>
+                  <div>Browser: {data.client.userAgent.split(') ')[0].split(' (')[0]}</div>
+                  <div>Cookies: {data.client.cookies.count} (Auth cookies: {data.client.cookies.authCookiesFound ? 'Yes' : 'No'})</div>
+                  {data.client.potentialIssues.length > 0 && (
+                    <div className="mt-1">
+                      <div>Potential issues:</div>
+                      <ul className="list-disc pl-5">
+                        {data.client.potentialIssues.map((issue: string, i: number) => (
+                          <li key={i}>{issue}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -226,6 +263,81 @@ const SignInPage: FC = () => {
       setIsSubmitting(false);
     }
   };
+  
+  // Test if cookies can be stored
+  const testCookies = () => {
+    try {
+      // Try to set a test cookie
+      const testValue = `test-${new Date().getTime()}`;
+      document.cookie = `auth_test=${testValue}; path=/`;
+      
+      // Check if cookie was set
+      const cookieSet = document.cookie.includes(`auth_test=${testValue}`);
+      
+      if (cookieSet) {
+        setErrors(prev => ({
+          ...prev,
+          general: (
+            <>
+              <div className="p-3 bg-green-100 dark:bg-green-900 dark:bg-opacity-30 rounded border border-green-300 dark:border-green-700">
+                <div className="font-medium text-green-800 dark:text-green-300">Cookie Test Passed</div>
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  Your browser successfully stored a test cookie. Try these steps to fix authentication:
+                </p>
+                <ol className="list-decimal pl-5 text-sm mt-2 text-green-700 dark:text-green-400">
+                  <li>Clear your browser cookies and cache</li>
+                  <li>Disable any ad-blockers or privacy extensions</li>
+                  <li>Try signing in again</li>
+                </ol>
+              </div>
+            </>
+          )
+        }));
+        
+        // Clean up test cookie
+        document.cookie = "auth_test=; max-age=0; path=/";
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: (
+            <>
+              <div className="p-3 bg-electric-crimson bg-opacity-10 rounded border border-electric-crimson">
+                <div className="font-medium text-electric-crimson">Cookie Storage Blocked</div>
+                <p className="text-sm">
+                  Your browser is blocking cookie storage. This prevents authentication from working.
+                  To fix this issue:
+                </p>
+                <ol className="list-decimal pl-5 text-sm mt-2">
+                  <li>Check your browser privacy settings</li>
+                  <li>Allow cookies for this website</li>
+                  <li>Disable privacy extensions or ad-blockers</li>
+                  <li>Try a different browser (Chrome or Firefox)</li>
+                </ol>
+              </div>
+            </>
+          )
+        }));
+      }
+    } catch (e) {
+      console.error('Error in cookie test:', e);
+      setErrors(prev => ({
+        ...prev,
+        general: (
+          <>
+            <div className="p-3 bg-electric-crimson bg-opacity-10 rounded border border-electric-crimson">
+              <div className="font-medium text-electric-crimson">Cookie Access Error</div>
+              <p className="text-sm">
+                An error occurred while testing cookie storage: {e instanceof Error ? e.message : String(e)}
+              </p>
+              <p className="text-sm mt-2">
+                This likely indicates your browser has strict privacy settings or extensions blocking cookies.
+              </p>
+            </div>
+          </>
+        )
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,6 +349,43 @@ const SignInPage: FC = () => {
       console.log('Form validation passed, attempting sign in...');
       
       try {
+        // Pre-check: Test if cookies can be set
+        const testValue = `test-${new Date().getTime()}`;
+        document.cookie = `signin_test=${testValue}; path=/`;
+        const cookieWorks = document.cookie.includes(`signin_test=${testValue}`);
+        
+        if (!cookieWorks) {
+          console.warn('Cookie test failed - browser is blocking cookies');
+          setErrors(prev => ({ 
+            ...prev, 
+            general: (
+              <>
+                <div className="p-3 bg-electric-crimson bg-opacity-10 rounded border border-electric-crimson">
+                  <div className="font-medium text-electric-crimson">Cookie Storage Blocked</div>
+                  <p className="text-sm">
+                    Your browser is blocking cookies, which prevents authentication from working.
+                    Please adjust your browser settings to allow cookies for this website.
+                  </p>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={testCookies}
+                      className="px-3 py-1 bg-electric-indigo text-white text-sm rounded hover:bg-opacity-90"
+                    >
+                      Detailed Cookie Diagnostics
+                    </button>
+                  </div>
+                </div>
+              </>
+            )
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Clean up test cookie
+        document.cookie = "signin_test=; max-age=0; path=/";
+        
         // Use Supabase for authentication
         console.log('Credentials prepared, calling signIn function...');
         const { data, error } = await signIn(formData.email, formData.password);
@@ -265,6 +414,7 @@ const SignInPage: FC = () => {
                       <li>Try again in a few minutes - Supabase auth might be temporarily unavailable</li>
                       <li>Check if your Supabase instance is active - free tier instances go to sleep</li>
                       <li>Verify that your email/password combination is correct</li>
+                      <li>Check if your browser is blocking cookies</li>
                     </ol>
                     
                     <div className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
@@ -276,12 +426,22 @@ const SignInPage: FC = () => {
                         Check Auth Status
                       </button>
                       
-                      <Link 
-                        href="/dashboard?debugBypass=true" 
-                        className="text-sm text-center px-3 py-1 text-electric-indigo border border-electric-indigo rounded hover:bg-electric-indigo hover:bg-opacity-10 transition-colors"
+                      <button 
+                        type="button"
+                        onClick={testCookies}
+                        className="text-sm px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                       >
-                        Bypass Login (Dev Only)
-                      </Link>
+                        Test Cookies
+                      </button>
+                      
+                      {process.env.NODE_ENV === 'development' && (
+                        <Link 
+                          href="/dashboard?debugBypass=true" 
+                          className="text-sm text-center px-3 py-1 text-electric-indigo border border-electric-indigo rounded hover:bg-electric-indigo hover:bg-opacity-10 transition-colors"
+                        >
+                          Bypass Login (Dev Only)
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}

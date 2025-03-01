@@ -1,6 +1,67 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import supabase from '../../utils/supabaseClient';
 
+// Define interfaces for our diagnostic report types
+interface EnvStatus {
+  exists: boolean;
+  value: string | null;
+}
+
+interface DbStatus {
+  connected: boolean;
+  error: string | null;
+  responseTime?: string;
+  slow?: boolean;
+}
+
+interface AuthStatus {
+  operational: boolean;
+  error: string | null;
+  responseTime?: string;
+  slow?: boolean;
+}
+
+interface CookieDiagnostics {
+  present: boolean;
+  count: number;
+  authCookiesFound: boolean;
+  specificCookies: {
+    name: string;
+    found: boolean;
+  }[];
+}
+
+interface DiagnosticReport {
+  status: string;
+  timestamp: string;
+  environment: {
+    nodeEnv: string;
+    variables: {
+      supabaseUrl: EnvStatus;
+      supabaseAnonKey: EnvStatus;
+    };
+  };
+  infrastructure: {
+    database: DbStatus;
+    auth: AuthStatus;
+  };
+  client: {
+    userAgent: string;
+    type: string;
+    ip: string;
+    cookies: CookieDiagnostics;
+    potentialIssues: string[];
+  };
+  recommendations: string[];
+}
+
+// List of expected auth cookies
+const EXPECTED_AUTH_COOKIES = [
+  'sb-access-token', 
+  'sb-refresh-token',
+  'supabase-auth-token'
+];
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -25,20 +86,24 @@ export default async function handler(
     };
 
     // Test database connectivity
-    let dbStatus: { connected: boolean; error: string | null } = { 
+    let dbStatus: DbStatus = { 
       connected: false, 
       error: null 
     };
     
     try {
+      const startDb = Date.now();
       const { error } = await supabase
         .from('_test_connection')
         .select('*')
         .limit(1);
+      const responseTime = Date.now() - startDb;
       
       dbStatus = {
         connected: !error,
-        error: error ? error.message : null
+        error: error ? error.message : null,
+        responseTime: `${responseTime}ms`,
+        slow: responseTime > 500
       };
     } catch (err) {
       dbStatus = {
@@ -48,12 +113,7 @@ export default async function handler(
     }
 
     // Test auth service
-    let authStatus: { 
-      operational: boolean; 
-      error: string | null;
-      responseTime?: string;
-      slow?: boolean;
-    } = { 
+    let authStatus: AuthStatus = { 
       operational: false, 
       error: null 
     };
@@ -81,25 +141,63 @@ export default async function handler(
     const isBrowser = !!userAgent.match(/(chrome|safari|firefox|edge|opera)/i);
     const isBot = !!userAgent.match(/(bot|crawler|spider)/i);
     const isMobile = !!userAgent.match(/(android|iphone|ipad|mobile)/i);
+    
+    // Check specific browsers known to have third-party cookie issues
+    const isSafari = !!userAgent.match(/safari/i) && !userAgent.match(/chrome/i);
+    const isFirefox = !!userAgent.match(/firefox/i);
+    const isChrome = !!userAgent.match(/chrome/i);
+    const isEdge = !!userAgent.match(/edg/i);
 
     // Get network information
     const clientIp = req.headers['x-forwarded-for'] || 
                      req.socket.remoteAddress || 
                      'Unknown';
-
+                     
+    // Check cookies
+    const cookieHeader = req.headers.cookie || '';
+    const cookieCount = cookieHeader ? cookieHeader.split(';').length : 0;
+    const allCookies = cookieHeader.split(';').map(c => c.trim().split('=')[0]);
+    
+    // Check for expected authentication cookies
+    const foundAuthCookies = EXPECTED_AUTH_COOKIES.filter(cookieName => 
+      allCookies.some(c => c.includes(cookieName))
+    );
+    
+    const cookieDiagnostics: CookieDiagnostics = {
+      present: cookieCount > 0,
+      count: cookieCount,
+      authCookiesFound: foundAuthCookies.length > 0,
+      specificCookies: EXPECTED_AUTH_COOKIES.map(name => ({
+        name,
+        found: allCookies.some(c => c.includes(name))
+      }))
+    };
+    
+    // Identify potential browser-specific issues
+    const potentialIssues: string[] = [];
+    
+    if (isSafari) {
+      potentialIssues.push("Safari's Intelligent Tracking Prevention may block cookies");
+    }
+    
+    if (isFirefox) {
+      potentialIssues.push("Firefox's Enhanced Tracking Protection may block cookies");
+    }
+    
+    if (isChrome) {
+      potentialIssues.push("Chrome's Privacy features may block third-party cookies");
+    }
+    
+    if (cookieCount === 0) {
+      potentialIssues.push("No cookies detected - browser may be blocking cookies completely");
+    }
+    
     // Create a diagnostic report
-    const diagnosticReport: {
-      status: string;
-      timestamp: string;
-      environment: any;
-      infrastructure: any;
-      client: any;
-      recommendations: string[];
-    } = {
+    const diagnosticReport: DiagnosticReport = {
       status: 'success',
       timestamp: new Date().toISOString(),
       environment: {
-        nodeEnv: process.env.NODE_ENV,
+        nodeEnv: process.env.NODE_ENV || 'unknown',
         variables: envStatus
       },
       infrastructure: {
@@ -109,11 +207,9 @@ export default async function handler(
       client: {
         userAgent,
         type: isBrowser ? 'browser' : isBot ? 'bot' : isMobile ? 'mobile' : 'unknown',
-        ip: typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : clientIp,
-        cookies: {
-          present: !!req.headers.cookie,
-          count: req.headers.cookie ? req.headers.cookie.split(';').length : 0
-        }
+        ip: typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : Array.isArray(clientIp) ? clientIp[0] : String(clientIp),
+        cookies: cookieDiagnostics,
+        potentialIssues
       },
       recommendations: []
     };
@@ -142,7 +238,37 @@ export default async function handler(
         'Auth service is responding slowly, which might cause timeouts. This could be due to Supabase free tier limitations.'
       );
     }
-
+    
+    // Cookie-specific recommendations
+    if (!cookieDiagnostics.present) {
+      diagnosticReport.recommendations.push(
+        'Your browser is not sending any cookies. Check your browser settings to allow cookies for this site.'
+      );
+    } else if (!cookieDiagnostics.authCookiesFound) {
+      diagnosticReport.recommendations.push(
+        'Authentication cookies are missing. Try clearing all browser cookies and sign in again.'
+      );
+    }
+    
+    // Browser-specific recommendations
+    if (isSafari) {
+      diagnosticReport.recommendations.push(
+        'If using Safari, go to Preferences > Privacy > Website tracking and disable "Prevent cross-site tracking"'
+      );
+    }
+    
+    if (isFirefox) {
+      diagnosticReport.recommendations.push(
+        'If using Firefox, go to Settings > Privacy & Security and set Enhanced Tracking Protection to "Standard" instead of "Strict"'
+      );
+    }
+    
+    if (isChrome) {
+      diagnosticReport.recommendations.push(
+        'If using Chrome, make sure third-party cookies are enabled in Settings > Privacy and security > Cookies and other site data'
+      );
+    }
+    
     // Return the diagnostic report
     return res.status(200).json(diagnosticReport);
   } catch (error) {
