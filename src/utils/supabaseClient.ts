@@ -24,6 +24,24 @@ if (typeof window !== 'undefined') {
     supabaseUrl,
     supabaseAnonKey,
     {
+      cookies: {
+        get: (name) => {
+          return document.cookie
+            .split('; ')
+            .find((row) => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+        },
+        set: (name, value, options) => {
+          document.cookie = `${name}=${value}; ${Object.entries(options || {})
+            .map(([key, value]) => `${key}=${value}`)
+            .join('; ')}`;
+        },
+        remove: (name, options) => {
+          document.cookie = `${name}=; max-age=0; ${Object.entries(options || {})
+            .map(([key, value]) => `${key}=${value}`)
+            .join('; ')}`;
+        },
+      },
       cookieOptions: { 
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
