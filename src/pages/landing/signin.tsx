@@ -127,7 +127,13 @@ const SignInPage: FC = () => {
   const [authDiagnostics, setAuthDiagnostics] = useState<any>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [emergencyBypass, setEmergencyBypass] = useState(false);
-
+  
+  // GUARANTEED BYPASS - NO AUTH CHECKS
+  const ultraBypass = () => {
+    console.log('ULTRA BYPASS: Skipping ALL checks');
+    window.location.href = '/dashboard';
+  };
+  
   // Check system preference on load
   useEffect(() => {
     // Check if user has a saved preference
@@ -393,13 +399,6 @@ const SignInPage: FC = () => {
       console.error('Force login failed', e);
       setIsSubmitting(false);
     }
-  };
-
-  // Add an ultra direct bypass function
-  const ultraBypass = () => {
-    console.log('ULTRA BYPASS: Skipping ALL authentication checks');
-    // Just redirect immediately to dashboard
-    router.push('/dashboard?ultra=true');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
