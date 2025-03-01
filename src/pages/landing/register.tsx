@@ -7,17 +7,20 @@ import Link from 'next/link';
 const RegisterPage: FC = () => {
   const router = useRouter();
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: 'John Doe',
     email: 'john.doe@example.com',
     password: 'password123',
     confirmPassword: 'password123',
+    terms: false,
   });
   const [errors, setErrors] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    terms: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,6 +88,14 @@ const RegisterPage: FC = () => {
       isValid = false;
     } else {
       newErrors.confirmPassword = '';
+    }
+
+    // Validate terms agreement
+    if (!formData.terms) {
+      newErrors.terms = 'You must agree to the terms and conditions';
+      isValid = false;
+    } else {
+      newErrors.terms = '';
     }
 
     setErrors(newErrors);
@@ -251,6 +262,33 @@ const RegisterPage: FC = () => {
                 {errors.confirmPassword && <p className="mt-1 text-sm text-electric-crimson">{errors.confirmPassword}</p>}
               </div>
               
+              <div className="mt-4">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="terms"
+                      name="terms"
+                      type="checkbox"
+                      onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.checked }))}
+                      className="focus:ring-electric-indigo h-4 w-4 text-electric-indigo border-cosmic-grey dark:border-stardust rounded"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="terms" className="text-cosmic-grey dark:text-stardust">
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-electric-indigo hover:underline"
+                      >
+                        Terms and Conditions
+                      </button>
+                    </label>
+                    {errors.terms && <p className="mt-1 text-sm text-electric-crimson">{errors.terms}</p>}
+                  </div>
+                </div>
+              </div>
+              
               <div className="pt-2">
                 <button
                   type="submit"
@@ -282,6 +320,99 @@ const RegisterPage: FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      </div>
+      
+      {/* Render Terms and Conditions Modal */}
+      <TermsAndConditionsModal 
+        isOpen={showTermsModal} 
+        onClose={() => setShowTermsModal(false)} 
+      />
+    </div>
+  );
+};
+
+const TermsAndConditionsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-midnight-blue rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+        <div className="p-6 border-b border-cosmic-grey dark:border-stardust border-opacity-20">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-semibold text-midnight-blue dark:text-cosmic-latte">Terms and Conditions</h3>
+            <button
+              onClick={onClose}
+              className="text-cosmic-grey hover:text-electric-crimson dark:text-stardust dark:hover:text-electric-crimson transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-6 overflow-auto flex-grow text-midnight-blue dark:text-cosmic-latte">
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">1. Introduction</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">Welcome to Chief Cognitive Officer ("CCO"), an AI-powered productivity platform designed for developers. By using our services, you agree to be bound by these Terms and Conditions.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">2. Platform Description</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">CCO is an intelligent assistant that integrates with Zoom meetings, providing real-time guidance and automatically generating documentation, specifications, and code repositories.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">3. Data Collection and Privacy</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">CCO processes meeting data to provide its services. We implement end-to-end encryption and have clear data retention policies to protect your privacy. By using CCO, you consent to the collection and processing of meeting data and other information imported from integrated services.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">4. Third-Party Integrations</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">CCO integrates with various third-party services including Zoom, Google Drive, Dropbox, Twitter, email, and calendar applications. Use of these integrations is subject to the respective terms and conditions of those services.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">5. User Responsibilities</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree not to use CCO for any illegal or unauthorized purpose.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">6. Content Ownership</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">You retain ownership of all content you provide to CCO. You grant CCO a license to use this content solely for the purpose of providing and improving our services.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">7. Marketplace</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">CCO may feature a marketplace connecting clients with developers. We do not guarantee the quality of services provided by developers or the satisfaction of clients with those services.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">8. Limitations of Liability</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">CCO is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, special, consequential or punitive damages arising from your use of the service.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">9. Modifications to Terms</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">We reserve the right to modify these terms at any time. Continued use of CCO after changes constitutes acceptance of the modified terms.</p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium mb-2 text-midnight-blue dark:text-cosmic-latte">10. Termination</h4>
+              <p className="text-midnight-blue dark:text-nebula-white">We may terminate or suspend your account at our discretion, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 border-t border-cosmic-grey dark:border-stardust border-opacity-20">
+          <button
+            onClick={onClose}
+            className="w-full bg-electric-indigo hover:bg-opacity-90 text-nebula-white text-center px-4 py-3 rounded-md font-medium transition-all"
+          >
+            I Understand and Agree
+          </button>
         </div>
       </div>
     </div>
