@@ -130,8 +130,11 @@ const SignInPage: FC = () => {
   
   // GUARANTEED BYPASS - NO AUTH CHECKS
   const ultraBypass = () => {
-    console.log('ULTRA BYPASS: Skipping ALL checks');
-    window.location.href = '/dashboard';
+    console.log('ULTRA BYPASS: FORCING HARD REDIRECT');
+    // Use complete URL with current domain to prevent any routing issues
+    const currentDomain = window.location.origin;
+    // Force browser navigation - completely bypass Next.js
+    window.location.replace(`${currentDomain}/dashboard`);
   };
   
   // Check system preference on load
