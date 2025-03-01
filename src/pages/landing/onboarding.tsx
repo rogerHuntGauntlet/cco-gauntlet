@@ -3,6 +3,7 @@ import type { FC } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { getUser } from '../../utils/supabaseClient';
 
 // Import components
 import {
@@ -45,18 +46,32 @@ const OnboardingPage: FC = () => {
       document.documentElement.classList.toggle('dark', prefersDark);
     }
 
-    // Check if user is authenticated
-    const storedUserData = localStorage.getItem('cco_user');
-    if (storedUserData) {
-      const parsedUserData = JSON.parse(storedUserData);
-      if (parsedUserData.isAuthenticated) {
-        setUserData(parsedUserData);
-      } else {
-        router.push('/landing/signin');
+    // Check if user is authenticated with Supabase
+    const checkAuth = async () => {
+      try {
+        const { user, error } = await getUser();
+        
+        if (error || !user) {
+          console.error('Auth error:', error);
+          // Middleware will handle the redirect to sign-in page
+          return;
+        }
+        
+        // Get user's name from localStorage if available (from registration)
+        const userName = localStorage.getItem('user_name') || 'User';
+        
+        setUserData({
+          id: user.id,
+          email: user.email,
+          name: userName
+        });
+      } catch (err) {
+        console.error('Auth check error:', err);
+        // Middleware will handle the redirect to sign-in page
       }
-    } else {
-      router.push('/landing/signin');
-    }
+    };
+    
+    checkAuth();
   }, [router]);
 
   const toggleSource = (source: string) => {

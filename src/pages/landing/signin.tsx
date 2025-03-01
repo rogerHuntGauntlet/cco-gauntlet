@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import type { FC } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { signIn } from '../../utils/supabaseClient';
+import dynamic from 'next/dynamic';
+
+// Import AuthStatusIndicator with no SSR to prevent server rendering issues
+const AuthStatusIndicator = dynamic(
+  () => import('../../components/auth/AuthStatusIndicator'),
+  { ssr: false }
+);
 
 const SignInPage: FC = () => {
   const router = useRouter();
@@ -14,9 +22,11 @@ const SignInPage: FC = () => {
   const [errors, setErrors] = useState({
     email: '',
     password: '',
-    general: '',
+    general: '' as string | ReactNode,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authDiagnostics, setAuthDiagnostics] = useState<any>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   // Check system preference on load
   useEffect(() => {
@@ -69,42 +79,120 @@ const SignInPage: FC = () => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const checkAuthStatus = async () => {
+    try {
+      setIsSubmitting(true);
+      const response = await fetch('/api/auth-status');
+      const data = await response.json();
+      setAuthDiagnostics(data);
+      setShowDiagnostics(true);
+      setIsSubmitting(false);
+    } catch (err) {
+      console.error('Error fetching auth status:', err);
+      setAuthDiagnostics({ error: 'Failed to fetch auth status' });
+      setShowDiagnostics(true);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted, validating...');
+    setShowDiagnostics(false);
     
     if (validateForm()) {
       setIsSubmitting(true);
+      console.log('Form validation passed, attempting sign in...');
       
-      // Simulate API call for login
-      setTimeout(() => {
-        // For demo purposes, create a dummy user if one doesn't exist
-        const userData = localStorage.getItem('cco_user');
+      try {
+        // Use Supabase for authentication
+        console.log('Credentials prepared, calling signIn function...');
+        const { data, error } = await signIn(formData.email, formData.password);
         
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.email === formData.email) {
-            // Update auth status
-            user.isAuthenticated = true;
-            localStorage.setItem('cco_user', JSON.stringify(user));
-            
-            // Redirect to dashboard or onboarding
-            router.push('/landing/onboarding');
+        if (error) {
+          console.error('Supabase auth error:', error);
+          // Log more details about the error
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          
+          // Show a more helpful error message with debug bypass option for backend errors
+          const isBackendError = error.status === 500 || 
+                                error.message?.includes('unavailable') ||
+                                error.message?.includes('Authentication service');
+          
+          setErrors(prev => ({ 
+            ...prev, 
+            general: (
+              <>
+                <div className="font-medium mb-1">Authentication Error:</div>
+                <div>{error.message || 'Authentication failed. Please check your credentials or try again later.'}</div>
+                
+                {isBackendError && (
+                  <div className="mt-3 space-y-2">
+                    <div className="font-medium">Possible Solutions:</div>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Try again in a few minutes - Supabase auth might be temporarily unavailable</li>
+                      <li>Check if your Supabase instance is active - free tier instances go to sleep</li>
+                      <li>Verify that your email/password combination is correct</li>
+                    </ol>
+                    
+                    <div className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                      <button 
+                        type="button"
+                        onClick={checkAuthStatus}
+                        className="text-sm px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Check Auth Status
+                      </button>
+                      
+                      <a 
+                        href="/dashboard?debugBypass=true" 
+                        className="text-sm text-center px-3 py-1 text-electric-indigo border border-electric-indigo rounded hover:bg-electric-indigo hover:bg-opacity-10 transition-colors"
+                      >
+                        Bypass Login (Dev Only)
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+        
+        if (data?.user) {
+          console.log('Sign-in successful, preparing redirect...');
+          // Check if there's a redirectTo query parameter
+          const redirectTo = router.query.redirectTo as string;
+          if (redirectTo) {
+            // Decode the URL if it's URL-encoded
+            const decodedRedirect = decodeURIComponent(redirectTo);
+            console.log('Redirecting to:', decodedRedirect);
+            router.push(decodedRedirect);
           } else {
-            setErrors(prev => ({ ...prev, general: 'Invalid email or password' }));
-            setIsSubmitting(false);
+            // Default redirect to dashboard if no redirectTo parameter
+            console.log('No redirectTo parameter, defaulting to dashboard...');
+            router.push('/dashboard');
           }
         } else {
-          // No existing user, create a dummy one (for demo)
-          localStorage.setItem('cco_user', JSON.stringify({
-            name: 'Demo User',
-            email: formData.email,
-            isAuthenticated: true
-          }));
-          
-          // Redirect to onboarding
-          router.push('/landing/onboarding');
+          console.error('No user data returned but no error either, unusual state');
+          setErrors(prev => ({ ...prev, general: 'An unexpected error occurred' }));
+          setIsSubmitting(false);
         }
-      }, 1500);
+      } catch (err) {
+        console.error('Login error:', err);
+        if (err instanceof Error) {
+          console.error('Error stack:', err.stack);
+        }
+        
+        setErrors(prev => ({ 
+          ...prev, 
+          general: 'Server error occurred. Please try again later or contact support if the issue persists.' 
+        }));
+        setIsSubmitting(false);
+      }
+    } else {
+      console.log('Form validation failed');
     }
   };
 
@@ -182,9 +270,24 @@ const SignInPage: FC = () => {
               Access your AI-powered second brain and tools.
             </p>
             
+            <div className="mb-4">
+              <AuthStatusIndicator />
+            </div>
+            
             {errors.general && (
-              <div className="mb-6 p-4 bg-electric-crimson bg-opacity-10 border border-electric-crimson border-opacity-50 rounded-md">
-                <p className="text-electric-crimson">{errors.general}</p>
+              <div className="mb-6 p-4 bg-electric-crimson bg-opacity-10 border border-electric-crimson border-opacity-50 rounded-md text-electric-crimson">
+                {errors.general}
+              </div>
+            )}
+
+            {showDiagnostics && authDiagnostics && (
+              <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md text-sm">
+                <h3 className="font-medium mb-2">Auth Diagnostics:</h3>
+                <div className="max-h-56 overflow-auto">
+                  <pre className="whitespace-pre-wrap break-words text-xs">
+                    {JSON.stringify(authDiagnostics, null, 2)}
+                  </pre>
+                </div>
               </div>
             )}
             
@@ -199,6 +302,7 @@ const SignInPage: FC = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   className={`w-full px-4 py-3 bg-white dark:bg-cosmic-grey dark:bg-opacity-20 rounded-md border ${errors.email ? 'border-electric-crimson' : 'border-cosmic-grey dark:border-stardust border-opacity-30 dark:border-opacity-30'} text-midnight-blue dark:text-nebula-white placeholder-cosmic-grey dark:placeholder-stardust placeholder-opacity-70 dark:placeholder-opacity-70 focus:outline-none focus:border-electric-indigo transition-colors duration-300`}
                   placeholder="john@example.com"
                 />
@@ -220,6 +324,7 @@ const SignInPage: FC = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="current-password"
                   className={`w-full px-4 py-3 bg-white dark:bg-cosmic-grey dark:bg-opacity-20 rounded-md border ${errors.password ? 'border-electric-crimson' : 'border-cosmic-grey dark:border-stardust border-opacity-30 dark:border-opacity-30'} text-midnight-blue dark:text-nebula-white placeholder-cosmic-grey dark:placeholder-stardust placeholder-opacity-70 dark:placeholder-opacity-70 focus:outline-none focus:border-electric-indigo transition-colors duration-300`}
                   placeholder="••••••••"
                 />

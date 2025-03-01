@@ -89,7 +89,7 @@ const Settings: NextPage = () => {
         return {
           ...prev,
           [section]: {
-            ...prev[section],
+            ...(prev[section] as object),
             [key]: value,
           },
         };

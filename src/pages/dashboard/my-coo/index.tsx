@@ -205,7 +205,7 @@ const INTEGRATION_TEMPLATES: ReadonlyArray<IntegrationTemplate> = [
       }
     ]
   }
-] as const;
+];
 
 // Keyboard shortcuts configuration
 interface ShortcutConfig {
@@ -354,6 +354,7 @@ interface DragItem {
 
 // Add new component for draggable template card
 const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template, onSelect }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
     type: 'template',
     item: { template },
@@ -362,9 +363,16 @@ const DraggableTemplateCard: React.FC<DraggableTemplateCardProps> = ({ template,
     })
   }));
 
+  // Connect the drag ref to our card ref
+  useEffect(() => {
+    if (cardRef.current) {
+      drag(cardRef.current);
+    }
+  }, [drag, cardRef]);
+
   return (
     <motion.div
-      ref={drag}
+      ref={cardRef}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}

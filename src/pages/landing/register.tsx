@@ -3,6 +3,7 @@ import type { FC } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { signUp } from '../../utils/supabaseClient';
 
 const RegisterPage: FC = () => {
   const router = useRouter();
@@ -18,6 +19,7 @@ const RegisterPage: FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    general: '',  // Added for general errors
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,7 +48,7 @@ const RegisterPage: FC = () => {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { ...errors };
+    const newErrors = { ...errors, general: '' };
 
     // Validate name
     if (!formData.name.trim()) {
@@ -91,24 +93,37 @@ const RegisterPage: FC = () => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
       setIsSubmitting(true);
       
-      // Simulate API call for creating account
-      setTimeout(() => {
-        // Store user data in localStorage (for demo purposes only)
-        localStorage.setItem('cco_user', JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          isAuthenticated: true
-        }));
+      try {
+        // Use Supabase for registration
+        const { data, error } = await signUp(formData.email, formData.password);
         
-        // Redirect to onboarding
-        router.push('/landing/onboarding');
-      }, 1500);
+        if (error) {
+          setErrors(prev => ({ ...prev, general: error.message || 'Registration failed' }));
+          setIsSubmitting(false);
+          return;
+        }
+        
+        if (data) {
+          // Store user's name in local storage to be used later
+          localStorage.setItem('user_name', formData.name);
+          
+          // After successful signup, redirect to onboarding
+          router.push('/landing/onboarding');
+        } else {
+          setErrors(prev => ({ ...prev, general: 'An unexpected error occurred' }));
+          setIsSubmitting(false);
+        }
+      } catch (err) {
+        console.error('Registration error:', err);
+        setErrors(prev => ({ ...prev, general: 'An unexpected error occurred' }));
+        setIsSubmitting(false);
+      }
     }
   };
 
