@@ -260,18 +260,9 @@ const SignInPage: FC = () => {
         
         if (data?.user) {
           console.log('Sign-in successful, preparing redirect...');
-          // Check if there's a redirectTo query parameter
-          const redirectTo = router.query.redirectTo as string;
-          if (redirectTo) {
-            // Decode the URL if it's URL-encoded
-            const decodedRedirect = decodeURIComponent(redirectTo);
-            console.log('Redirecting to:', decodedRedirect);
-            router.push(decodedRedirect);
-          } else {
-            // Default redirect to dashboard if no redirectTo parameter
-            console.log('No redirectTo parameter, defaulting to dashboard...');
-            router.push('/dashboard');
-          }
+          // Always redirect to dashboard after successful login
+          console.log('Redirecting to dashboard...');
+          router.push('/dashboard');
         } else {
           console.error('No user data returned but no error either, unusual state');
           setErrors(prev => ({ ...prev, general: 'An unexpected error occurred' }));
