@@ -1,0 +1,84 @@
+[33mcommit 5c9eab8cf36c9b7256b7f657424864d0ede8536f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Roger <roger.b.hunt.iii@gauntletai.com>
+Date:   Fri Feb 28 20:37:57 2025 -0600
+
+    Refactor Next.js webpack configuration for Supabase function handling
+    
+    - Improved webpack watchOptions handling for Supabase function files
+    - Safely merged existing ignored paths with new Supabase function exclusion
+    - Updated TypeScript configuration to ignore build errors during development
+
+ ...vqr8v7s7slf5r7n.apps.googleusercontent.com.json |  1 [32m+[m
+ next.config.js                                     | 29 [32m+++++++[m[31m---[m
+ test-auth.js                                       | 65 [32m++++++++++++++++++++++[m
+ 3 files changed, 88 insertions(+), 7 deletions(-)
+
+[33mcommit aacf88529a567ae08c63bc07aca89ccae4a40ecb[m[33m ([m[1;31morigin/master[m[33m)[m
+Author: Roger <roger.b.hunt.iii@gauntletai.com>
+Date:   Fri Feb 28 20:21:00 2025 -0600
+
+    Configure Next.js webpack and TypeScript settings for Supabase functions
+    
+    - Updated Next.js configuration to ignore Supabase/Deno function files during build
+    - Added webpack rule to exclude Supabase functions using ignore-loader
+    - Modified TypeScript configuration to handle function-related type checking
+    - Installed development dependencies for Deno and TypeScript support
+
+ .vercelignore     |   8 [32m++[m
+ next.config.js    |  23 [32m+++++[m
+ package-lock.json | 286 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ package.json      |   1 [32m+[m
+ 4 files changed, 316 insertions(+), 2 deletions(-)
+
+[33mcommit d69849d04e110e76a158b832763f54aeab84c9e7[m
+Author: Roger <roger.b.hunt.iii@gauntletai.com>
+Date:   Fri Feb 28 20:18:45 2025 -0600
+
+    Add test script and external data documentation
+    
+    - Added `test:api` script to package.json for testing external API
+    - Updated Supabase migrations README with detailed documentation on external data handling
+    - Installed additional dev dependencies for API testing (node-fetch, dotenv)
+    - Included instructions for Supabase Edge Function and Next.js API route deployment
+
+ package.json                                      |   7 [32m+[m[31m-[m
+ src/pages/api/external-data.ts                    |  97 [32m+++++++[m
+ src/utils/test-external-api.ts                    |  71 [32m+++++[m
+ supabase/.gitignore                               |   4 [32m+[m
+ supabase/config.toml                              | 278 [32m+++++++++++++++++++[m
+ supabase/functions/README.md                      |  82 [32m++++++[m
+ supabase/functions/deno.d.ts                      |  10 [32m+[m
+ supabase/functions/external-data/.env.example     |   9 [32m+[m
+ supabase/functions/external-data/README.md        | 103 [32m+++++++[m
+ supabase/functions/external-data/index.ts         | 316 [32m++++++++++++++++++++++[m
+ supabase/functions/external-data/test.sh          |  52 [32m++++[m
+ supabase/migrations/4_add_external_data_table.sql |  57 [32m++++[m
+ supabase/migrations/README.md                     |  59 [32m+++[m[31m-[m
+ 13 files changed, 1143 insertions(+), 2 deletions(-)
+
+[33mcommit 7f8e9ff84dd9ce1925aee316e73aaca07c1baefa[m
+Author: Roger <roger.b.hunt.iii@gauntletai.com>
+Date:   Fri Feb 28 19:37:06 2025 -0600
+
+    Add social login buttons to sign-in and register pages
+    
+    - Implemented SocialLoginButtons component for both sign-in and register pages
+    - Added support for GitHub, Google, Discord, and GitLab social login providers
+    - Updated Supabase client with signInWithProvider method
+    - Styled social login buttons with loading states and icons
+    - Improved user authentication flow with multiple login options
+
+ src/pages/auth/callback.tsx    |  50 [32m+++++++++++++++++[m
+ src/pages/landing/register.tsx | 105 [32m+++++++++++++++++++++++++++++++++[m[31m-[m
+ src/pages/landing/signin.tsx   | 125 [32m++++++++++++++++++++++++++++++++++++[m[31m-----[m
+ src/utils/supabaseClient.ts    |  22 [32m++++++++[m
+ 4 files changed, 287 insertions(+), 15 deletions(-)
+
+[33mcommit fc50d6a0b24924483e83f87bc237973ebbbffc7c[m
+Author: Roger <roger.b.hunt.iii@gauntletai.com>
+Date:   Fri Feb 28 19:09:42 2025 -0600
+
+    Update home page redirect to signin page
+
+ src/pages/index.tsx | 6 [32m+++[m[31m---[m
+ 1 file changed, 3 insertions(+), 3 deletions(-)
