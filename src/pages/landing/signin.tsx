@@ -111,15 +111,52 @@ const SocialLoginButtons: FC = () => {
   );
 };
 
-// IMMEDIATE DASHBOARD REDIRECT
-// This component now automatically redirects to the dashboard without any authentication
+// HARDCODED USER AUTHENTICATION
+// This component now sets a hardcoded user and redirects to dashboard
 const SignInPage: FC = () => {
   const router = useRouter();
   
-  // Automatically redirect to dashboard on page load
   useEffect(() => {
-    console.log('Sign-in page loaded - redirecting directly to dashboard');
-    router.replace('/dashboard');
+    // Hardcode the specific user data
+    const setHardcodedUser = async () => {
+      try {
+        console.log('Setting hardcoded user data');
+        
+        // Store the user data in localStorage to simulate an authenticated session
+        localStorage.setItem('supabase.auth.token', JSON.stringify({
+          currentSession: {
+            access_token: 'hardcoded_access_token',
+            refresh_token: 'hardcoded_refresh_token',
+            user: {
+              id: 'a12fdb05-d08e-4fb4-b0fc-a29d123e08b4',
+              email: 'data@ideatrek.io',
+              created_at: '2025-01-13T10:16:00.000Z',
+              updated_at: '2025-01-28T12:17:00.000Z',
+              confirmed_at: '2025-01-13T10:16:00.000Z',
+              last_sign_in_at: '2025-01-28T12:17:00.000Z',
+              role: 'authenticated',
+              app_metadata: {
+                provider: 'email'
+              },
+              user_metadata: {}
+            }
+          },
+          expiresAt: Date.now() + 3600000 // 1 hour from now
+        }));
+        
+        // Set a cookie as well to help with auth state
+        document.cookie = `sb-access-token=hardcoded_access_token; path=/; max-age=3600`;
+        document.cookie = `sb-refresh-token=hardcoded_refresh_token; path=/; max-age=3600`;
+        
+        // Now redirect to dashboard
+        console.log('Hardcoded user set - redirecting to dashboard');
+        router.replace('/dashboard');
+      } catch (error) {
+        console.error('Error setting hardcoded user:', error);
+      }
+    };
+    
+    setHardcodedUser();
   }, [router]);
   
   // Return a minimal loading indicator while redirecting
@@ -127,7 +164,7 @@ const SignInPage: FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-midnight-blue">
       <div className="text-center">
         <div className="animate-spin h-10 w-10 border-4 border-electric-indigo border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-lg">Redirecting to dashboard...</p>
+        <p className="text-lg">Setting hardcoded user and redirecting to dashboard...</p>
       </div>
     </div>
   );
