@@ -106,4 +106,61 @@ After applying migrations, use the built-in test page to verify everything is wo
 3. The response should show all tables exist with their row counts
 4. If you've added sample data, you should see it in the sample data section
 
-If any table shows as not existing or you see errors, check the console logs for more details 
+If any table shows as not existing or you see errors, check the console logs for more details
+
+## Running Migrations
+
+These migrations should be run in order:
+
+1. `1_create_tables.sql` - Creates the main application tables
+2. `3_create_triggers.sql` - Sets up triggers for automatic updates
+3. `4_add_external_data_table.sql` - Adds the external_data table for storing data from external services
+
+You can run these migrations in the Supabase web interface under the SQL Editor section, or use the Supabase CLI.
+
+## External Data API
+
+The external_data table has been added to store data received from external services. 
+
+### Supabase Edge Function (Recommended)
+
+We're using a Supabase Edge Function to handle incoming data from external services. This provides better performance, scalability, and security compared to a Next.js API route.
+
+To deploy the edge function:
+
+1. Install the Supabase CLI: `npm install -g supabase`
+2. Login to Supabase: `supabase login`
+3. Link to your project: `supabase link --project-ref <your-project-ref>`
+4. Deploy the function: `supabase functions deploy external-data --no-verify-jwt`
+5. Set the API key: `supabase secrets set EXTERNAL_SERVICE_API_KEY=your_secure_api_key_here`
+
+External services can then send data to:
+```
+POST https://<your-project-ref>.supabase.co/functions/v1/external-data
+```
+
+See the README in `supabase/functions/external-data/` for more details.
+
+### Alternative: Next.js API Route (Legacy)
+
+We also have a Next.js API route (`/api/external-data`) that provides similar functionality, but the Edge Function is recommended for production use.
+
+External services must include an API key in the `x-api-key` header to authenticate. The API key should be set in the `EXTERNAL_SERVICE_API_KEY` environment variable.
+
+### Sample Request
+
+```bash
+# For Edge Function (recommended)
+curl -X POST https://<your-project-ref>.supabase.co/functions/v1/external-data \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your_secure_api_key_here" \
+  -d '{"source": "external_service_name", "data": {"key": "value"}}'
+
+# For Next.js API route (legacy)
+curl -X POST https://your-domain.com/api/external-data \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your_secure_api_key_here" \
+  -d '{"source": "external_service_name", "data": {"key": "value"}}'
+```
+
+The `source` field is required and should identify the external service sending the data. 

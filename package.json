@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:api": "ts-node src/utils/test-external-api.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.758.0",
@@ -36,10 +37,14 @@
   },
   "devDependencies": {
     "@types/node": "^20.2.5",
+    "@types/node-fetch": "^2.6.11",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "dotenv": "^16.4.5",
     "eslint": "^8.43.0",
     "eslint-config-next": "13.4.4",
+    "node-fetch": "^2.7.0",
+    "ts-node": "^10.9.2",
     "typescript": "^4.9.5"
   }
 }
