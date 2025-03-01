@@ -8,40 +8,21 @@ interface Preferences {
 }
 
 interface CustomizeStepProps {
-  preferences?: Preferences;
-  setPreferences?: (preferences: Preferences) => void;
-  onContinue?: () => void;
-  onBack?: () => void;
+  preferences: Preferences;
+  setPreferences: (preferences: Preferences) => void;
+  onContinue: () => void;
+  onBack: () => void;
 }
 
-const defaultPreferences: Preferences = {
-  notificationFrequency: 'daily',
-  dataPrivacy: 'private',
-  aiSuggestions: true
-};
-
 const CustomizeStep: FC<CustomizeStepProps> = ({ 
-  preferences = defaultPreferences, 
-  setPreferences = () => {}, 
-  onContinue = () => {}, 
-  onBack = () => {} 
+  preferences, 
+  setPreferences, 
+  onContinue, 
+  onBack 
 }) => {
   const updatePreference = (key: keyof Preferences, value: any) => {
     setPreferences({ ...preferences, [key]: value });
   };
-
-  // This page is not meant to be accessed directly
-  if (typeof window !== 'undefined' && typeof setPreferences !== 'function') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-        <h2 className="text-xl font-semibold mb-4">Component Preview</h2>
-        <p className="text-cosmic-grey dark:text-stardust text-center max-w-md">
-          This is a component meant to be used within the landing page flow. 
-          Please navigate to the main onboarding flow to see it in context.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-nebula-white dark:bg-cosmic-grey dark:bg-opacity-20 rounded-xl p-8 md:p-12 shadow-lg">

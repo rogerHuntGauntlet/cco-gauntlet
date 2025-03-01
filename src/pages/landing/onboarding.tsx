@@ -13,9 +13,8 @@ import {
   CustomizeStep,
   ConfirmationStep,
   VoiceInteractionStep,
-  DataSource,
-  Preferences
-} from './components';
+} from '../../components/landing';
+import type { DataSource, Preferences } from '../../components/landing/types';
 
 const OnboardingPage: FC = () => {
   const router = useRouter();

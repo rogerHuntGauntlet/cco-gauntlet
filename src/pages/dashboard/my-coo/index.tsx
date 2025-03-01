@@ -41,7 +41,7 @@ type IntegrationTemplate = {
   category: string;
   complexity: string;
   estimatedTime: string;
-  nodes: Array<{
+  nodes: ReadonlyArray<{
     id: string;
     serviceId: string;
     position: { x: number; y: number };
@@ -56,7 +56,7 @@ type IntegrationTemplate = {
 };
 
 // Example templates with proper node structure
-const INTEGRATION_TEMPLATES: IntegrationTemplate[] = [
+const INTEGRATION_TEMPLATES: ReadonlyArray<IntegrationTemplate> = [
   {
     id: 'google-drive',
     name: 'Google Drive',
@@ -251,7 +251,7 @@ const INTEGRATION_TEMPLATES: IntegrationTemplate[] = [
       }
     ]
   }
-] as const;
+];
 
 // Keyboard shortcuts configuration
 const SHORTCUTS = {

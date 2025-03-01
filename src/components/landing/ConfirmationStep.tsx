@@ -15,43 +15,24 @@ interface Preferences {
 }
 
 interface ConfirmationStepProps {
-  selectedSources?: string[];
-  dataSources?: DataSource[];
-  preferences?: Preferences;
+  selectedSources: string[];
+  dataSources: DataSource[];
+  preferences: Preferences;
   userProject?: string;
-  onFinish?: () => void;
-  onBack?: () => void;
-  isProcessing?: boolean;
+  onFinish: () => void;
+  onBack: () => void;
+  isProcessing: boolean;
 }
 
-const defaultPreferences: Preferences = {
-  notificationFrequency: 'daily',
-  dataPrivacy: 'private',
-  aiSuggestions: true
-};
-
 const ConfirmationStep: FC<ConfirmationStepProps> = ({
-  selectedSources = [],
-  dataSources = [],
-  preferences = defaultPreferences,
+  selectedSources,
+  dataSources,
+  preferences,
   userProject,
-  onFinish = () => {},
-  onBack = () => {},
-  isProcessing = false
+  onFinish,
+  onBack,
+  isProcessing
 }) => {
-  // This page is not meant to be accessed directly
-  if (typeof window !== 'undefined' && (!dataSources || dataSources.length === 0)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-        <h2 className="text-xl font-semibold mb-4">Component Preview</h2>
-        <p className="text-cosmic-grey dark:text-stardust text-center max-w-md">
-          This is a component meant to be used within the landing page flow. 
-          Please navigate to the main onboarding flow to see it in context.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-nebula-white dark:bg-cosmic-grey dark:bg-opacity-20 rounded-xl p-8 md:p-12 shadow-lg">
       <div className="text-center mb-8">
@@ -99,7 +80,7 @@ const ConfirmationStep: FC<ConfirmationStepProps> = ({
                 const source = dataSources.find(s => s.id === sourceId);
                 return (
                   <div key={sourceId} className="inline-flex items-center bg-electric-indigo bg-opacity-10 dark:bg-opacity-20 text-electric-indigo px-3 py-1 rounded-full text-sm">
-                    {source?.name || sourceId}
+                    {source?.name}
                   </div>
                 );
               })}

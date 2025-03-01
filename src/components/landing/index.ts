@@ -1,3 +1,4 @@
+// This file is excluded from routes with _ prefix
 // Export all onboarding components
 export { default as ProgressSteps } from './ProgressSteps';
 export { default as IntroductionStep } from './IntroductionStep';

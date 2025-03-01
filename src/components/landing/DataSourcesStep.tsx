@@ -9,37 +9,24 @@ interface DataSource {
 }
 
 interface DataSourcesStepProps {
-  dataSources?: DataSource[];
-  selectedSources?: string[];
-  toggleSource?: (sourceId: string) => void;
-  onContinue?: () => void;
-  onBack?: () => void;
-  onSkip?: () => void;
-  isProcessing?: boolean;
+  dataSources: DataSource[];
+  selectedSources: string[];
+  toggleSource: (sourceId: string) => void;
+  onContinue: () => void;
+  onBack: () => void;
+  onSkip: () => void;
+  isProcessing: boolean;
 }
 
 const DataSourcesStep: FC<DataSourcesStepProps> = ({
-  dataSources = [],
-  selectedSources = [],
-  toggleSource = () => {},
-  onContinue = () => {},
-  onBack = () => {},
-  onSkip = () => {},
-  isProcessing = false
+  dataSources,
+  selectedSources,
+  toggleSource,
+  onContinue,
+  onBack,
+  onSkip,
+  isProcessing
 }) => {
-  // This page is not meant to be accessed directly
-  if (typeof window !== 'undefined' && (!dataSources || dataSources.length === 0)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-        <h2 className="text-xl font-semibold mb-4">Component Preview</h2>
-        <p className="text-cosmic-grey dark:text-stardust text-center max-w-md">
-          This is a component meant to be used within the landing page flow. 
-          Please navigate to the main onboarding flow to see it in context.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
