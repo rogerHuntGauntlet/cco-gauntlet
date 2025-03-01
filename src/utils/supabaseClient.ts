@@ -26,27 +26,52 @@ if (typeof window !== 'undefined') {
     {
       cookies: {
         get: (name) => {
-          return document.cookie
-            .split('; ')
-            .find((row) => row.startsWith(`${name}=`))
-            ?.split('=')[1];
+          try {
+            return document.cookie
+              .split('; ')
+              .find((row) => row.startsWith(`${name}=`))
+              ?.split('=')[1];
+          } catch (e) {
+            console.error('Error getting cookie:', e);
+            return undefined;
+          }
         },
         set: (name, value, options) => {
-          document.cookie = `${name}=${value}; ${Object.entries(options || {})
-            .map(([key, value]) => `${key}=${value}`)
-            .join('; ')}`;
+          try {
+            let cookieString = `${name}=${value}`;
+            if (options) {
+              Object.entries(options).forEach(([key, val]) => {
+                cookieString += `; ${key}=${val}`;
+              });
+            }
+            document.cookie = cookieString;
+          } catch (e) {
+            console.error('Error setting cookie:', e);
+          }
         },
         remove: (name, options) => {
-          document.cookie = `${name}=; max-age=0; ${Object.entries(options || {})
-            .map(([key, value]) => `${key}=${value}`)
-            .join('; ')}`;
+          try {
+            let cookieString = `${name}=; max-age=0`;
+            if (options) {
+              Object.entries(options).forEach(([key, val]) => {
+                cookieString += `; ${key}=${val}`;
+              });
+            }
+            document.cookie = cookieString;
+          } catch (e) {
+            console.error('Error removing cookie:', e);
+          }
         },
       },
       cookieOptions: { 
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/'
-      }
+      },
+      // Fix for some browsers blocking third-party cookies
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
     }
   );
 } else {
@@ -54,6 +79,7 @@ if (typeof window !== 'undefined') {
   supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
+      autoRefreshToken: false
     }
   });
 }
@@ -62,7 +88,20 @@ if (typeof window !== 'undefined') {
 export const signIn = async (email: string, password: string) => {
   // Number of retries for auth operations
   const MAX_RETRIES = 2;
-  const TIMEOUT_DURATION = 10000; // 10 seconds timeout
+  const TIMEOUT_DURATION = 15000; // 15 seconds timeout - increased for slower connections
+  
+  // Clear any existing sessions or cookies that might be interfering
+  try {
+    // Clear browser cookies related to auth
+    if (typeof window !== 'undefined') {
+      const authCookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+      authCookies.forEach(cookieName => {
+        document.cookie = `${cookieName}=; max-age=0; path=/; domain=${window.location.hostname}`;
+      });
+    }
+  } catch (e) {
+    console.warn('Could not clear existing auth cookies:', e);
+  }
   
   // Implement retry logic with exponential backoff
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -70,6 +109,7 @@ export const signIn = async (email: string, password: string) => {
       if (attempt > 0) {
         // Wait with exponential backoff before retrying (1s, then 2s)
         await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        console.log(`Retrying sign-in attempt ${attempt}/${MAX_RETRIES}...`);
       }
       
       // Create a timeout promise
@@ -91,9 +131,20 @@ export const signIn = async (email: string, password: string) => {
       // Race the sign in against the timeout
       const { data, error } = await Promise.race([authPromise, timeoutPromise]);
       
+      // If we got a successful response
+      if (data && data.session && !error) {
+        console.log('Authentication successful, session established');
+        
+        // Force a refresh of the session to ensure cookies are set properly
+        await supabase.auth.refreshSession();
+        
+        return { data, error: null };
+      }
+      
       if (error) {
         // Check if this is a server error that warrants a retry
         if (error.status && error.status >= 500 && attempt < MAX_RETRIES) {
+          console.warn(`Server error (${error.status}), will retry...`);
           continue; // Try again
         }
         
@@ -125,6 +176,8 @@ export const signIn = async (email: string, password: string) => {
       return { data, error };
       
     } catch (e) {
+      console.error('Error during sign in:', e);
+      
       // If this isn't the last attempt, try again
       if (attempt < MAX_RETRIES) {
         continue;

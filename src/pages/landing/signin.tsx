@@ -180,14 +180,48 @@ const SignInPage: FC = () => {
   const checkAuthStatus = async () => {
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/auth-status');
+      
+      // Use our new comprehensive diagnosis endpoint instead
+      const response = await fetch('/api/diagnose-auth');
       const data = await response.json();
+      
       setAuthDiagnostics(data);
       setShowDiagnostics(true);
       setIsSubmitting(false);
+      
+      // If there are recommendations, show them as part of the error message
+      if (data.recommendations && data.recommendations.length > 0) {
+        setErrors(prev => ({
+          ...prev,
+          general: (
+            <>
+              <div className="font-medium mb-1">Authentication Diagnostic Results:</div>
+              <div className="mb-3">
+                {data.infrastructure.auth.operational ? 
+                  'Auth service is operational, but there may be configuration issues.' : 
+                  'Auth service is not responding correctly.'}
+              </div>
+              
+              <div className="font-medium">Recommendations:</div>
+              <ul className="list-disc pl-5 space-y-1 mb-3">
+                {data.recommendations.map((rec: string, i: number) => (
+                  <li key={i}>{rec}</li>
+                ))}
+              </ul>
+              
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-gray-500 mt-2">
+                  Environment: {data.environment.nodeEnv}, 
+                  DB Connected: {data.infrastructure.database.connected ? 'Yes' : 'No'}
+                </div>
+              )}
+            </>
+          )
+        }));
+      }
     } catch (err) {
-      console.error('Error fetching auth status:', err);
-      setAuthDiagnostics({ error: 'Failed to fetch auth status' });
+      console.error('Error fetching auth diagnostics:', err);
+      setAuthDiagnostics({ error: 'Failed to fetch auth diagnostics' });
       setShowDiagnostics(true);
       setIsSubmitting(false);
     }

@@ -14,18 +14,57 @@ export async function middleware(req: NextRequest) {
     const hasDebugBypass = searchParams.has('debugBypass') && 
                          process.env.NODE_ENV === 'development';
     
+    // Add debug headers if in development
+    if (process.env.NODE_ENV === 'development') {
+      res.headers.set('X-Auth-Debug', 'Middleware-Active');
+    }
+    
+    // Get Supabase environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    // Validation check to avoid creating client with invalid credentials
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[Auth Middleware] Missing Supabase credentials');
+      // Add debug headers if in development
+      if (process.env.NODE_ENV === 'development') {
+        res.headers.set('X-Auth-Error', 'Missing-Supabase-Credentials');
+      }
+      // Redirect to error page if not on signin/register pages
+      if (!pathname.startsWith('/landing/signin') && !pathname.startsWith('/landing/register')) {
+        return NextResponse.redirect(new URL('/landing/signin?error=config', req.url));
+      }
+      return res;
+    }
+    
     // Create a Supabase client configured to use cookies
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
-          get: (name) => req.cookies.get(name)?.value,
+          get: (name) => {
+            try {
+              const cookie = req.cookies.get(name);
+              return cookie?.value;
+            } catch (e) {
+              console.error('[Auth Middleware] Error reading cookie:', e);
+              return undefined;
+            }
+          },
           set: (name, value, options) => {
-            res.cookies.set({ name, value, ...options })
+            try {
+              res.cookies.set({ name, value, ...options });
+            } catch (e) {
+              console.error('[Auth Middleware] Error setting cookie:', e);
+            }
           },
           remove: (name, options) => {
-            res.cookies.set({ name, value: '', ...options })
+            try {
+              res.cookies.set({ name, value: '', ...options });
+            } catch (e) {
+              console.error('[Auth Middleware] Error removing cookie:', e);
+            }
           },
         },
       }
@@ -33,17 +72,27 @@ export async function middleware(req: NextRequest) {
     
     // Get session with robust error handling
     let session = null;
+    let sessionError = null;
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         // Log error but continue flow as unauthenticated
         console.error('[Auth Middleware] Error getting session:', error.message);
+        sessionError = error;
       } else {
         session = data.session;
       }
     } catch (sessionError) {
       console.error('[Auth Middleware] Failed to get session:', 
         sessionError instanceof Error ? sessionError.message : 'Unknown error');
+    }
+    
+    // Add additional debug headers in development
+    if (process.env.NODE_ENV === 'development') {
+      res.headers.set('X-Auth-Status', session ? 'Authenticated' : 'Unauthenticated');
+      if (sessionError) {
+        res.headers.set('X-Auth-Error', 'Session-Error');
+      }
     }
     
     // Define protected routes that require authentication
@@ -69,9 +118,14 @@ export async function middleware(req: NextRequest) {
       // Add the original URL as a parameter to redirect after login
       redirectUrl.searchParams.set('redirectTo', pathname);
       
+      // If there was a session error, add it to the URL for debugging
+      if (sessionError && process.env.NODE_ENV === 'development') {
+        redirectUrl.searchParams.set('sessionError', 'true');
+      }
+      
       // Preserve any additional query parameters from the original request
       Array.from(searchParams.entries()).forEach(([key, value]) => {
-        if (key !== 'redirectTo') {
+        if (key !== 'redirectTo' && key !== 'sessionError') {
           redirectUrl.searchParams.append(key, value);
         }
       });
@@ -92,6 +146,11 @@ export async function middleware(req: NextRequest) {
     // Log unexpected errors in the middleware
     console.error('[Auth Middleware] Unexpected error:', 
       error instanceof Error ? error.message : 'Unknown error');
+    
+    // Add debug headers in development
+    if (process.env.NODE_ENV === 'development') {
+      res.headers.set('X-Auth-Critical-Error', 'Middleware-Exception');
+    }
   }
 
   // For other cases, proceed as normal
