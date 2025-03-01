@@ -202,6 +202,28 @@ export const signOut = async () => {
   }
 };
 
+export const signInWithProvider = async (provider: 'discord' | 'github' | 'gitlab' | 'google') => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
+      },
+    });
+    
+    return { data, error };
+  } catch (e) {
+    return { 
+      data: null, 
+      error: {
+        message: e instanceof Error ? e.message : 'Social sign in failed',
+        status: 500,
+        code: 'internal_error'
+      } as AuthError
+    };
+  }
+};
+
 export const resetPassword = async (email: string) => {
   try {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
